@@ -142,6 +142,7 @@ CREATE POLICY "inspection_steps_update_own" ON inspection_steps
 -- Triggers and Functions
 
 -- Function to handle new user creation
+-- All users are created as admin (no exceptions)
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -149,8 +150,8 @@ BEGIN
   VALUES (
     NEW.id,
     NEW.email,
-    NEW.raw_user_meta_data->>'full_name',
-    COALESCE(NEW.raw_user_meta_data->>'role', 'technician')
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'Técnico'),
+    'admin'
   );
   RETURN NEW;
 END;

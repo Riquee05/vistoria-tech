@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key'
-);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const AuthContext = createContext<any>(null);
 
@@ -31,11 +31,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const signUp = async (email: string, password: string, fullName?: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName || '',
+        },
+      },
+    });
+    return { data, error };
+  };
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
   }
 
   return (
-    <AuthContext.Provider value={{ profile, signOut, isLoading }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ profile, signOut, signUp, isLoading }}>{children}</AuthContext.Provider>
   );
 }

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 import InspectionList from "@/pages/InspectionList";
 import NewInspection from "@/pages/NewInspection";
 import InspectionDetail from "@/pages/InspectionDetail";
@@ -50,6 +51,14 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <Routes>
+    <Route
+      path="/register"
+      element={
+        <PublicRoute>
+          <Register />
+        </PublicRoute>
+      }
+    />
     <Route
       path="/login"
       element={
