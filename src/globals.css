@@ -49,6 +49,14 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* VistoriaTech custom colors */
+    --vtech-slate: 215 28% 17%;
+    --vtech-blue: 201 96% 32%;
+    --vtech-blue-light: 199 89% 48%;
+    --vtech-blue-lighter: 198 93% 60%;
+    --vtech-gray: 220 13% 91%;
+    --vtech-gray-dark: 215 28% 17%;
   }
 
   .dark {
@@ -82,7 +90,7 @@
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
@@ -97,5 +105,29 @@
 
   body {
     @apply bg-background text-foreground;
+    background: linear-gradient(135deg, hsl(var(--vtech-slate)) 0%, hsl(var(--vtech-blue)) 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .vtech-card {
+    @apply bg-white/95 backdrop-blur-sm border-slate-200 shadow-xl;
+  }
+
+  .vtech-button-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105;
+  }
+
+  .vtech-step-active {
+    @apply bg-blue-50 border-blue-200 text-blue-900;
+  }
+
+  .vtech-step-completed {
+    @apply bg-green-50 border-green-200 text-green-900;
+  }
+
+  .vtech-step-inactive {
+    @apply bg-gray-50 border-gray-200 text-gray-600;
   }
 }
