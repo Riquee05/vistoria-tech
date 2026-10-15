@@ -83,67 +83,69 @@ export default function InspectionList() {
         ) : (
           <div className="space-y-4">
             {inspections.map((inspection) => (
-              <Card key={inspection.id} className="border">
-                <CardHeader className="flex items-center justify-between pb-2">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg font-semibold">
-                      OS: {inspection.os_number} | Ativo: {inspection.asset_number}
-                    </CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground">
-                      {format(new Date(inspection.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => window.location.href = `/vistoria/${inspection.id}`}
-                      title="Visualizar"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => window.location.href = `/editar-vistoria/${inspection.id}`}
-                      title="Editar"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      ghost
-                      size="icon"
-                      onClick={() => handleDelete(inspection.id)}
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-                <div className="px-4 py-2">
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="px-2 py-1 rounded-md bg-muted">
-                      Status: 
-                      <span className={`font-medium ${
-                        inspection.status === 'completed' 
-                          ? 'text-success' 
-                          : inspection.status === 'in_progress' 
-                            ? 'text-warning' 
-                            : 'text-muted-foreground'
-                      }`}>
-                        {inspection.status === 'completed' ? 'Concluída' : 
-                         inspection.status === 'in_progress' ? 'Em andamento' : 'Arquivada'}
-                      </span>
-                    </span>
-                    <span className="px-2 py-1 rounded-md bg-muted">
-                      Responsável: 
-                      <span className="font-medium">{profile?.full_name || 'Técnico'}</span>
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                          <Card key={inspection.id} className="border">
+                            <CardHeader className="flex items-center justify-between pb-2">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg font-semibold">
+                                  OS: {inspection.os_number} | Ativo: {inspection.asset_number}
+                                </CardTitle>
+                                <CardDescription className="text-sm text-muted-foreground">
+                                  {format(new Date(inspection.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                </CardDescription>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => window.location.href = `/vistoria/${inspection.id}`}
+                                  title="Visualizar"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => window.location.href = `/editar-vistoria/${inspection.id}`}
+                                  title="Editar"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  ghost
+                                  size="icon"
+                                  onClick={() => handleDelete(inspection.id)}
+                                  title="Excluir"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="px-4 py-2">
+                                <div className="flex items-center gap-4 text-sm">
+                                  <span className="px-2 py-1 rounded-md bg-muted">
+                                    Status:
+                                    <span className={`font-medium ${
+                                      inspection.status === 'completed'
+                                        ? 'text-success'
+                                        : inspection.status === 'in_progress'
+                                          ? 'text-warning'
+                                          : 'text-muted-foreground'
+                                    }`}>
+                                      {inspection.status === 'completed' ? 'Concluída' :
+                                       inspection.status === 'in_progress' ? 'Em andamento' : 'Arquivada'}
+                                    </span>
+                                  </span>
+                                  <span className="px-2 py-1 rounded-md bg-muted">
+                                    Responsável:
+                                    <span className="font-medium">{profile?.full_name || 'Técnico'}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
           </div>
         )}
       </div>
