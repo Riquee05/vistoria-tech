@@ -1,19 +1,33 @@
-// Update this page (the content is just a fallback if you fail to update the page)
-
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-const Index = () => {
+export default function Index() {
+  const { profile, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (profile) {
+    navigate("/");
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
+        <h1 className="text-4xl font-bold mb-4">Welcome to VistoriaTech</h1>
         <p className="text-xl text-gray-600">
-          Start building your amazing project here!
+          Entre com suas credenciais para começar a vistorias de notebooks.
         </p>
       </div>
       <MadeWithDyad />
     </div>
   );
-};
-
-export default Index;
+}
