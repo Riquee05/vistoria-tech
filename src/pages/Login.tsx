@@ -71,7 +71,8 @@ export default function Login() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center text-sm text-muted-foreground">
-          <p>Desenvolvido para equipe interna</p>
+          <p>Não tem conta? <a href="/register" className="underline">Cadastre-se</a></p>
+          <p className="mt-1">Desenvolvido para equipe interna</p>
         </CardFooter>
       </Card>
     </div>
