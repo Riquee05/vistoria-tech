@@ -67,57 +67,138 @@ CREATE TABLE inspection_steps (
 -- Profiles table RLS
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "profiles_select_all" ON profiles;
-DROP POLICY IF EXISTS "profiles_manage_own" ON profiles;
+DROP POLICY IF EXISTS "profiles_select" ON profiles;
+DROP POLICY IF EXISTS "profiles_insert" ON profiles;
+DROP POLICY IF EXISTS "profiles_update" ON profiles;
+DROP POLICY IF EXISTS "profiles_delete" ON profiles;
 
--- Since all users are admins (per user requirement), they can see all profiles
-CREATE POLICY "profiles_select_all" ON profiles
+-- Allow all users to see all profiles (since all are admins)
+CREATE POLICY "profiles_select" ON profiles
   FOR SELECT USING (true);
 
--- Users can insert/update their own profile
-CREATE POLICY "profiles_manage_own" ON profiles
-  FOR ALL
-  USING (id = auth.uid())
-  WITH CHECK (id = auth.uid());
+-- Allow users to insert their own profile (id must match their auth user id)
+CREATE POLICY "profiles_insert" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Profiles table RLS
+-- Allow users to update their own profile
+CREATE POLICY "profiles_update" ON profiles
+  FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- Allow users to delete their own profile
+CREATE POLICY "profiles_delete" ON profiles
+  FOR DELETE USING (auth.uid() = id);
+
+-- Inspections table RLS
 ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
 
--- Since all users are admins, they can see all inspections
-CREATE POLICY "inspections_select_all" ON inspections
+DROP POLICY IF EXISTS "inspections_select" ON inspections;
+DROP POLICY IF EXISTS "inspections_insert" ON inspections;
+DROP POLICY IF EXISTS "inspections_update" ON inspections;
+DROP POLICY IF EXISTS "inspections_delete" ON inspections;
+
+-- Allow all users to see all inspections (since all are admins)
+CREATE POLICY "inspections_select" ON inspections
   FOR SELECT USING (true);
 
--- Users can insert/update their own inspections
-CREATE POLICY "inspections_manage_own" ON inspections
-  FOR ALL
-  USING (profile_id = auth.uid())
-  WITH CHECK (profile_id = auth.uid());
+-- Allow users to insert their own inspections
+CREATE POLICY "inspections_insert" ON inspections
+  FOR INSERT WITH CHECK (auth.uid() = profile_id);
+
+-- Allow users to update their own inspections
+CREATE POLICY "inspections_update" ON inspections
+  FOR UPDATE USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
+
+-- Allow users to delete their own inspections
+CREATE POLICY "inspections_delete" ON inspections
+  FOR DELETE USING (auth.uid() = profile_id);
 
 -- Inspection photos table RLS
 ALTER TABLE inspection_photos ENABLE ROW LEVEL SECURITY;
 
--- Since all users are admins, they can see all inspection photos
-CREATE POLICY "inspection_photos_select_all" ON inspection_photos
+DROP POLICY IF EXISTS "inspection_photos_select" ON inspection_photos;
+DROP POLICY IF EXISTS "inspection_photos_insert" ON inspection_photos;
+DROP POLICY IF EXISTS "inspection_photos_update" ON inspection_photos;
+DROP POLICY IF EXISTS "inspection_photos_delete" ON inspection_photos;
+
+-- Allow all users to see all inspection photos (since all are admins)
+CREATE POLICY "inspection_photos_select" ON inspection_photos
   FOR SELECT USING (true);
 
--- Users can insert/update their own inspection photos
-CREATE POLICY "inspection_photos_manage_own" ON inspection_photos
-  FOR ALL
-  USING (inspection_id IN (SELECT id FROM inspections WHERE profile_id = auth.uid()))
-  WITH CHECK (inspection_id IN (SELECT id FROM inspections WHERE profile_id = auth.uid()));
+-- Allow users to insert their own inspection photos
+CREATE POLICY "inspection_photos_insert" ON inspection_photos
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM inspections
+      WHERE id = inspection_id AND profile_id = auth.uid()
+    )
+  );
+
+-- Allow users to update their own inspection photos
+CREATE POLICY "inspection_photos_update" ON inspection_photos
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM inspections
+      WHERE id = inspection_id AND profile_id = auth.uid()
+    )
+  ) WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM inspections
+      WHERE id = inspection_id AND profile_id = auth.uid()
+    )
+  );
+
+-- Allow users to delete their own inspection photos
+CREATE POLICY "inspection_photos_delete" ON inspection_photos
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM inspections
+      WHERE id = inspection_id AND profile_id = auth.uid()
+    )
+  );
 
 -- Inspection steps table RLS
 ALTER TABLE inspection_steps ENABLE ROW LEVEL SECURITY;
 
--- Since all users are admins, they can see all inspection steps
-CREATE POLICY "inspection_steps_select_all" ON inspection_steps
+DROP POLICY IF EXISTS "inspection_steps_select" ON inspection_steps;
+DROP POLICY IF EXISTS "inspection_steps_insert" ON inspection_steps;
+DROP POLICY IF EXISTS "inspection_steps_update" ON inspection_steps;
+DROP POLICY IF EXISTS "inspection_steps_delete" ON inspection_steps;
+
+-- Allow all users to see all inspection steps (since all are admins)
+CREATE POLICY "inspection_steps_select" ON inspection_steps
   FOR SELECT USING (true);
 
--- Users can insert/update their own inspection steps
-CREATE POLICY "inspection_steps_manage_own" ON inspection_steps
-  FOR ALL
-  USING (inspection_id IN (SELECT id FROM inspections WHERE profile_id = auth.uid()))
-  WITH CHECK (inspection_id IN (SELECT id FROM inspections WHERE profile_id = auth.uid()));
+-- Allow users to insert their own inspection steps
+CREATE POLICY "inspection_steps_insert" ON inspection_steps
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM inspections
+      WHERE id = inspection_id AND profile_id = auth.uid()
+    )
+  );
+
+-- Allow users to update their own inspection steps
+CREATE POLICY "inspection_steps_update" ON inspection_steps
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM inspections
+      WHERE id = inspection_id AND profile_id = auth.uid()
+    )
+  ) WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM inspections
+      WHERE id = inspection_id AND profile_id = auth.uid()
+    )
+  );
+
+-- Allow users to delete their own inspection steps
+CREATE POLICY "inspection_steps_delete" ON inspection_steps
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM inspections
+      WHERE id = inspection_id AND profile_id = auth.uid()
+    )
+  );
 
 -- Triggers and Functions
 
