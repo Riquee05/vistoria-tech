@@ -52,14 +52,22 @@ export default function InspectionDetail() {
       const { data: stepsData, error: stepsError } = await supabase
         .from('inspection_steps')
         .select('*')
-        .eq('inspection_id', id);
+        .eq('inspection_id', id)
+        .order('updated_at', { ascending: false });
 
       if (stepsError) throw stepsError;
       
-      // Merge with default steps
+      // Keep the UI on the stable step key (for example, "physical").
+      // Database rows have their own UUID, which must not be used to match photos.
       const mergedSteps = STEPS.map(step => {
         const existing = stepsData?.find(s => s.step_id === step.id);
-        return existing || { ...step, inspection_id: id, status: 'pending' as const };
+        return {
+          ...step,
+          step_id: step.id,
+          status: existing?.status || 'pending',
+          completed_at: existing?.completed_at || null,
+          additional_software: existing?.additional_software || null,
+        };
       });
       setSteps(mergedSteps);
 
@@ -94,19 +102,34 @@ export default function InspectionDetail() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data: existingSteps, error: findStepError } = await supabase
         .from('inspection_steps')
-        .upsert({
-          inspection_id: id,
-          step_id: stepId,
-          step_name: step.name,
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-        });
+        .select('id')
+        .eq('inspection_id', id)
+        .eq('step_id', stepId)
+        .limit(1);
+
+      if (findStepError) throw findStepError;
+
+      const completedAt = new Date().toISOString();
+      const stepUpdate = {
+        step_name: step.name,
+        status: 'completed' as const,
+        completed_at: completedAt,
+      };
+      const { error } = existingSteps?.length
+        ? await supabase
+            .from('inspection_steps')
+            .update(stepUpdate)
+            .eq('inspection_id', id)
+            .eq('step_id', stepId)
+        : await supabase
+            .from('inspection_steps')
+            .insert({ inspection_id: id, step_id: stepId, ...stepUpdate });
 
       if (error) throw error;
 
-      setSteps(prev => prev.map(s => s.step_id === stepId ? { ...s, status: 'completed', completed_at: new Date().toISOString() } : s));
+      setSteps(prev => prev.map(s => s.step_id === stepId ? { ...s, status: 'completed', completed_at: completedAt } : s));
       
       // Move to next step
       const nextIndex = steps.findIndex(s => s.step_id === stepId) + 1;
@@ -209,14 +232,37 @@ export default function InspectionDetail() {
     // Update step status to in_progress if pending
     const step = steps.find(s => s.step_id === stepId);
     if (step && step.status === 'pending') {
-      await supabase
+      const { data: existingSteps, error: findStepError } = await supabase
         .from('inspection_steps')
-        .upsert({
-          inspection_id: id,
-          step_id: stepId,
-          step_name: step.name,
-          status: 'in_progress',
-        });
+        .select('id')
+        .eq('inspection_id', id)
+        .eq('step_id', stepId)
+        .limit(1);
+
+      if (findStepError) {
+        toast({ title: 'Erro', description: 'A foto foi enviada, mas não foi possível atualizar a etapa', variant: 'destructive' });
+        return;
+      }
+
+      const { error: stepError } = existingSteps?.length
+        ? await supabase
+            .from('inspection_steps')
+            .update({ status: 'in_progress' })
+            .eq('inspection_id', id)
+            .eq('step_id', stepId)
+        : await supabase
+            .from('inspection_steps')
+            .insert({
+              inspection_id: id,
+              step_id: stepId,
+              step_name: step.name,
+              status: 'in_progress',
+            });
+
+      if (stepError) {
+        toast({ title: 'Erro', description: 'A foto foi enviada, mas não foi possível atualizar a etapa', variant: 'destructive' });
+        return;
+      }
       setSteps(prev => prev.map(s => s.step_id === stepId ? { ...s, status: 'in_progress' } : s));
     }
 
