@@ -272,11 +272,14 @@ DROP POLICY IF EXISTS "Users can upload to inspection-photos" ON storage.objects
 DROP POLICY IF EXISTS "Users can view inspection-photos" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete from inspection-photos" ON storage.objects;
 
+-- Allow authenticated users to upload files
 CREATE POLICY "Users can upload to inspection-photos" ON storage.objects
   FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Users can view inspection-photos" ON storage.objects
-  FOR SELECT USING (auth.uid() IS NOT NULL);
+-- Allow public access to view files (since bucket is public)
+CREATE POLICY "Public access to view inspection-photos" ON storage.objects
+  FOR SELECT USING (true);
 
+-- Allow authenticated users to delete files
 CREATE POLICY "Users can delete from inspection-photos" ON storage.objects
   FOR DELETE USING (auth.uid() IS NOT NULL);
