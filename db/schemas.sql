@@ -150,7 +150,7 @@ BEGIN
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', 'Técnico'),
+    COALESCE(NEW.user_metadata->>'full_name', 'Técnico'),
     'admin'
   );
   RETURN NEW;
