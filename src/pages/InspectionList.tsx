@@ -114,7 +114,6 @@ export default function InspectionList() {
                                 </Button>
                                 <Button
                                   variant="destructive"
-                                  ghost
                                   size="icon"
                                   onClick={() => handleDelete(inspection.id)}
                                   title="Excluir"
