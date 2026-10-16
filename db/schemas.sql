@@ -267,19 +267,16 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('inspection-photos', 'inspection-photos', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage policies (with DROP IF EXISTS to avoid duplication errors)
+-- Storage policies
 DROP POLICY IF EXISTS "Users can upload to inspection-photos" ON storage.objects;
 DROP POLICY IF EXISTS "Users can view inspection-photos" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete from inspection-photos" ON storage.objects;
 
--- Allow authenticated users to upload files
 CREATE POLICY "Users can upload to inspection-photos" ON storage.objects
   FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
--- Allow public access to view files (since bucket is public)
-CREATE POLICY "Public access to view inspection-photos" ON storage.objects
+CREATE POLICY "Public can view inspection-photos" ON storage.objects
   FOR SELECT USING (true);
 
--- Allow authenticated users to delete files
 CREATE POLICY "Users can delete from inspection-photos" ON storage.objects
   FOR DELETE USING (auth.uid() IS NOT NULL);
