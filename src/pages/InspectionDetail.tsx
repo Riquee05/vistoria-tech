@@ -153,6 +153,7 @@ export default function InspectionDetail() {
     }
 
     setSaving(true);
+    let inspectionCompleted = false;
     try {
       const { error } = await supabase
         .from('inspections')
@@ -163,6 +164,7 @@ export default function InspectionDetail() {
         .eq('id', id);
 
       if (error) throw error;
+      inspectionCompleted = true;
 
       // Update steps with additional software
       await supabase
@@ -173,10 +175,22 @@ export default function InspectionDetail() {
           additional_software: additionalSoftware,
         });
 
-      toast({ title: 'Vistoria finalizada!', description: 'A vistoria foi concluída com sucesso' });
+      const { error: driveError } = await supabase.functions.invoke('sync-inspection-to-drive', {
+        body: { inspectionId: id },
+      });
+
+      if (driveError) throw driveError;
+
+      toast({ title: 'Vistoria finalizada!', description: 'As fotos foram enviadas ao Google Drive com sucesso.' });
       navigate('/');
     } catch (err) {
-      toast({ title: 'Erro', description: 'Não foi possível finalizar a vistoria', variant: 'destructive' });
+      toast({
+        title: inspectionCompleted ? 'Vistoria concluída, mas o envio falhou' : 'Erro',
+        description: inspectionCompleted
+          ? 'As fotos não foram enviadas ao Google Drive. Verifique a integração e tente novamente.'
+          : 'Não foi possível finalizar a vistoria',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }
