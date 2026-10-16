@@ -59,19 +59,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile({ ...data, role: 'admin' });
       } else {
         // Upsert profile in DB
-        await supabase
+        const { error: upsertError } = await supabase
           .from('profiles')
           .upsert({
             id: authUser.id,
             email: authUser.email || '',
             full_name: defaultProfile.full_name,
             role: 'admin',
-          })
-          .catch(() => null);
+          });
+
+        if (upsertError) {
+          console.error('Error upserting profile:', upsertError);
+          // Still set the profile locally so the app can function
+        }
 
         setProfile(defaultProfile);
       }
-    } catch {
+    } catch (err) {
+      console.error('Error in syncProfile:', err);
       setProfile(defaultProfile);
     }
   };

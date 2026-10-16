@@ -67,21 +67,21 @@ CREATE TABLE inspection_steps (
 -- Profiles table RLS
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- Apenas admins podem ver todos os perfis
+DROP POLICY IF EXISTS "profiles_select_admin_only" ON profiles;
+DROP POLICY IF EXISTS "profiles_select_own" ON profiles;
+DROP POLICY IF EXISTS "profiles_insert_admin_only" ON profiles;
+DROP POLICY IF EXISTS "profiles_update_admin_only" ON profiles;
+
 CREATE POLICY "profiles_select_admin_only" ON profiles
   FOR SELECT USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
--- Usuários podem ver seu próprio perfil
 CREATE POLICY "profiles_select_own" ON profiles
   FOR SELECT USING (id = auth.uid());
 
--- Apenas admins podem inserir perfis (via trigger)
-CREATE POLICY "profiles_insert_admin_only" ON profiles
-  FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
-
--- Apenas admins podem atualizar perfis
-CREATE POLICY "profiles_update_admin_only" ON profiles
-  FOR UPDATE USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "profiles_upsert_own" ON profiles
+  FOR ALL
+  USING (id = auth.uid())
+  WITH CHECK (id = auth.uid());
 
 -- Profiles table RLS
 ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
