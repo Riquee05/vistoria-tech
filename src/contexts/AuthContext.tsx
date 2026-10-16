@@ -174,12 +174,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (data.user) {
       // Auto save profile in DB if user is already confirmed or created
-      await supabase.from('profiles').upsert({
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         email: email.trim(),
         full_name: fullName || 'Administrador',
         role: 'admin',
-      }).catch(() => null);
+      });
+      if (profileError) console.error('Error saving profile:', profileError);
     }
 
     return { data, error };
