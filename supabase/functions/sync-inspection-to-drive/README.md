@@ -1,6 +1,6 @@
 # Envio de vistorias para o Google Drive
 
-Esta função é chamada ao finalizar uma vistoria. Ela cria uma pasta com o nome `ATIVO - OS` e envia todas as fotos dessa vistoria para ela.
+Esta função é chamada ao finalizar uma vistoria. Ela cria uma pasta com o nome `Ativo ATIVO - OS NÚMERO` e envia todas as fotos dessa vistoria para ela.
 
 ## Configuração única
 
