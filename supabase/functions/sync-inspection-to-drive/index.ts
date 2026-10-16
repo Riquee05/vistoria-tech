@@ -146,7 +146,7 @@ Deno.serve(async (request) => {
 
     const accessToken = await getGoogleAccessToken(googleClientEmail, googlePrivateKey);
     const existingFolderId = photos?.find((photo) => photo.google_drive_folder_id)?.google_drive_folder_id;
-    const folderName = `${safeFolderName(inspection.asset_number)} - OS ${safeFolderName(inspection.os_number)}`;
+    const folderName = `Ativo ${safeFolderName(inspection.asset_number)} - OS ${safeFolderName(inspection.os_number)}`;
     const folderId = existingFolderId || await createDriveFolder(accessToken, folderName, parentFolderId);
     let uploadedFiles = 0;
 
