@@ -280,6 +280,18 @@ export default function InspectionDetail() {
       setSteps(prev => prev.map(s => s.step_id === stepId ? { ...s, status: 'in_progress' } : s));
     }
 
+    const { error: driveError } = await supabase.functions.invoke('sync-inspection-to-drive', {
+      body: { inspectionId: id },
+    });
+
+    if (driveError) {
+      toast({
+        title: 'Foto enviada, sincronização pendente',
+        description: 'A foto foi salva na vistoria. O envio ao Google Drive será tentado novamente ao concluir a vistoria.',
+        variant: 'destructive',
+      });
+    }
+
     toast({ title: 'Foto enviada', description: `${fileName} adicionada à etapa ${step?.name}` });
   };
 
@@ -454,4 +466,3 @@ export default function InspectionDetail() {
     </div>
   );
 }
-

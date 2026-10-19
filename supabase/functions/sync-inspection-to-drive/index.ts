@@ -19,8 +19,10 @@ const encodeBase64Url = (value: string | Uint8Array) => {
 };
 
 const privateKeyToCryptoKey = async (privateKey: string) => {
-  const pem = privateKey.replace(/\\n/g, '\n');
-  const base64 = pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, '');
+  const pem = privateKey.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+  const body = pem.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/)?.[1];
+  if (!body) throw new Error('Invalid Google service account private key');
+  const base64 = body.replace(/[^A-Za-z0-9+/=]/g, '');
   const binary = atob(base64);
   const keyData = Uint8Array.from(binary, (char) => char.charCodeAt(0));
 
