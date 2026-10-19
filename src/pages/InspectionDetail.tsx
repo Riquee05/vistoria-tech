@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { openInspectionReport } from '@/lib/inspection-report';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,12 +25,13 @@ export default function InspectionDetail() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [inspection, setInspection] = useState<any>(null);
   const [steps, setSteps] = useState<any[]>([]);
   const [photos, setPhotos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [additionalSoftware, setAdditionalSoftware] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -56,7 +58,7 @@ export default function InspectionDetail() {
         .order('updated_at', { ascending: false });
 
       if (stepsError) throw stepsError;
-      
+
       // Keep the UI on the stable step key (for example, "physical").
       // Database rows have their own UUID, which must not be used to match photos.
       const mergedSteps = STEPS.map(step => {
@@ -130,7 +132,7 @@ export default function InspectionDetail() {
       if (error) throw error;
 
       setSteps(prev => prev.map(s => s.step_id === stepId ? { ...s, status: 'completed', completed_at: completedAt } : s));
-      
+
       // Move to next step
       const nextIndex = steps.findIndex(s => s.step_id === stepId) + 1;
       if (nextIndex < steps.length) {
@@ -154,17 +156,19 @@ export default function InspectionDetail() {
 
     setSaving(true);
     let inspectionCompleted = false;
+    const completedAt = inspection.completed_at || new Date().toISOString();
     try {
       const { error } = await supabase
         .from('inspections')
         .update({
           status: 'completed',
-          completed_at: new Date().toISOString(),
+          completed_at: completedAt,
         })
         .eq('id', id);
 
       if (error) throw error;
       inspectionCompleted = true;
+      setInspection((previous: any) => ({ ...previous, status: 'completed', completed_at: completedAt }));
 
       // Update steps with additional software
       await supabase
@@ -187,7 +191,7 @@ export default function InspectionDetail() {
       toast({
         title: inspectionCompleted ? 'Vistoria concluída, mas o envio falhou' : 'Erro',
         description: inspectionCompleted
-          ? 'As fotos não foram enviadas ao Google Drive. Verifique a integração e tente novamente.'
+          ? 'As fotos não foram enviadas ao Google Drive. A vistoria está salva; tente finalizar novamente.'
           : 'Não foi possível finalizar a vistoria',
         variant: 'destructive',
       });
@@ -199,11 +203,11 @@ export default function InspectionDetail() {
   const handlePhotoUpload = async (stepId: string, file: File) => {
     // Compress image
     const compressed = await compressImage(file);
-    
+
     // Upload to Supabase Storage
     const fileName = `${Date.now()}-${file.name}`;
     const filePath = `${id}/${stepId}/${fileName}`;
-    
+
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('inspection-photos')
       .upload(filePath, compressed);
@@ -242,7 +246,7 @@ export default function InspectionDetail() {
       uploaded_at: new Date().toISOString(),
     };
     setPhotos(prev => [...prev, newPhoto]);
-    
+
     // Update step status to in_progress if pending
     const step = steps.find(s => s.step_id === stepId);
     if (step && step.status === 'pending') {
@@ -304,17 +308,17 @@ export default function InspectionDetail() {
         const maxWidth = 1920;
         const maxHeight = 1080;
         let { width, height } = img;
-        
+
         if (width > maxWidth || height > maxHeight) {
           const ratio = Math.min(maxWidth / width, maxHeight / height);
           width *= ratio;
           height *= ratio;
         }
-        
+
         canvas.width = width;
         canvas.height = height;
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         canvas.toBlob((blob) => {
           resolve(new File([blob!], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
         }, 'image/jpeg', 0.8);
@@ -338,13 +342,28 @@ export default function InspectionDetail() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Header 
-        osNumber={inspection.os_number} 
-        assetNumber={inspection.asset_number} 
-        showOsAsset={true} 
+      <Header
+        osNumber={inspection.os_number}
+        assetNumber={inspection.asset_number}
+        showOsAsset={true}
       />
-      
+
       <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <div className="flex justify-end mb-6">
+          <Button variant="outline" disabled={generatingPdf || saving} onClick={async () => {
+            setGeneratingPdf(true);
+            try {
+              await openInspectionReport(inspection, steps, photos, additionalSoftware);
+            } catch (error) {
+              toast({ title: 'Não foi possível gerar o PDF', description: error instanceof Error ? error.message : 'Tente novamente.', variant: 'destructive' });
+            } finally {
+              setGeneratingPdf(false);
+            }
+          }}>
+            {generatingPdf && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {generatingPdf ? 'Preparando relatório…' : 'Gerar relatório PDF'}
+          </Button>
+        </div>
         {/* Progress Steps */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -384,7 +403,7 @@ export default function InspectionDetail() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {stepPhotos.map((photo: any) => (
                     <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden border">
-                      <img 
+                      <img
                         src={supabase.storage.from('inspection-photos').getPublicUrl(photo.file_path).data.publicUrl}
                         alt={photo.file_name}
                         className="w-full h-full object-cover"
