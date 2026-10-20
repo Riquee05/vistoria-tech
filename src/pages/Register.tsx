@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Laptop, ShieldCheck, UserPlus, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function Register() {
-  const { signUp, signInDemo } = useAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -31,7 +31,16 @@ export default function Register() {
       return;
     }
 
-    const { data, error: signUpError } = await signUp(email, password, fullName);
+    let signUpResult: Awaited<ReturnType<typeof signUp>>;
+    try {
+      signUpResult = await signUp(email, password, fullName);
+    } catch {
+      setError('Não foi possível conectar ao serviço de cadastro. Verifique sua conexão e tente novamente.');
+      setIsLoadingLocal(false);
+      return;
+    }
+
+    const { data, error: signUpError } = signUpResult;
 
     if (signUpError) {
       setError(signUpError.message);
@@ -39,19 +48,14 @@ export default function Register() {
       return;
     }
 
-    // If user got an immediate session, navigate directly
+    // If confirmation is disabled, the authenticated account can enter directly.
     if (data?.session) {
       navigate('/');
       return;
     }
 
-    setSuccess('Conta criada com sucesso! O e-mail de confirmação foi disparado.');
+    setSuccess('Cadastro registrado. Se a confirmação por e-mail estiver ativada, confirme o endereço antes de entrar.');
     setIsLoadingLocal(false);
-  };
-
-  const handleEnterNow = () => {
-    signInDemo();
-    navigate('/');
   };
 
   return (
@@ -91,17 +95,16 @@ export default function Register() {
                     Conta registrada!
                   </div>
                   <p className="text-xs leading-relaxed text-emerald-300/90">
-                    O Supabase registrou seu usuário <strong>{email}</strong>.
-                    Se o link de confirmação chegou no seu e-mail, clique nele para validar.
+                    O cadastro de <strong>{email}</strong> foi enviado ao Supabase.
+                    Se a confirmação por e-mail estiver ativada, confira sua caixa de entrada e spam antes de entrar.
                   </p>
                 </div>
 
-                <Button
-                  onClick={handleEnterNow}
-                  className="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2.5 flex items-center justify-center gap-2"
-                >
-                  Entrar Direto na Vistoria agora
-                  <ArrowRight className="h-4 w-4" />
+                <Button asChild className="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2.5">
+                  <Link to="/login" className="flex items-center justify-center gap-2">
+                    Ir para o login
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </Button>
 
                 <div className="text-center">

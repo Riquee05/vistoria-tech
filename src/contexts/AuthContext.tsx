@@ -172,15 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    if (data.user) {
-      // Auto save profile in DB if user is already confirmed or created
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: data.user.id,
-        email: email.trim(),
-        full_name: fullName || 'Administrador',
-        role: 'admin',
-      });
-      if (profileError) console.error('Error saving profile:', profileError);
+    if (!error && data.session && data.user) {
+      // With email confirmation enabled there is no authenticated session here.
+      // The database trigger creates the profile; sync it only after auth succeeds.
+      setUser(data.user);
+      await syncProfile(data.user);
     }
 
     return { data, error };
