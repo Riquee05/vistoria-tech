@@ -204,19 +204,23 @@ CREATE POLICY "inspection_steps_delete" ON inspection_steps
 
 -- Function to handle new user creation
 -- All users are created as admin (no exceptions)
-CREATE OR REPLACE FUNCTION handle_new_user()
+CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, email, full_name, role)
+  INSERT INTO public.profiles (id, email, full_name, role)
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.user_metadata->>'full_name', 'Técnico'),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'Técnico'),
     'admin'
-  );
+  )
+  ON CONFLICT (id) DO UPDATE
+    SET email = EXCLUDED.email,
+        full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name),
+        updated_at = NOW();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- Trigger to call handle_new_user on auth user insert
 CREATE TRIGGER on_auth_user_insert
