@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { openInspectionReport } from '@/lib/inspection-report';
+import { buildInspectionReportHtml, openInspectionReport } from '@/lib/inspection-report';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,8 +32,12 @@ export default function InspectionDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [reportHtml, setReportHtml] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
   const [additionalSoftware, setAdditionalSoftware] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
+  const reportFrame = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -72,6 +76,8 @@ export default function InspectionDetail() {
         };
       });
       setSteps(mergedSteps);
+      const software = mergedSteps.find(step => step.id === 'config')?.additional_software || '';
+      setAdditionalSoftware(software);
 
       const { data: photosData, error: photosError } = await supabase
         .from('inspection_photos')
@@ -80,6 +86,19 @@ export default function InspectionDetail() {
 
       if (photosError) throw photosError;
       setPhotos(photosData || []);
+
+      if (inspectionData.status === 'completed') {
+        setReportLoading(true);
+        setReportError(null);
+        try {
+          const html = await buildInspectionReportHtml(inspectionData, mergedSteps, photosData || [], software);
+          setReportHtml(html);
+        } catch (error) {
+          setReportError(error instanceof Error ? error.message : 'Não foi possível preparar o relatório.');
+        } finally {
+          setReportLoading(false);
+        }
+      }
 
       // Find first incomplete step
       const firstIncomplete = mergedSteps.findIndex(s => s.status !== 'completed');
@@ -335,6 +354,41 @@ export default function InspectionDetail() {
 
   if (!inspection) {
     return <div className="min-h-screen flex items-center justify-center text-destructive">Vistoria não encontrada</div>;
+  }
+
+  if (inspection.status === 'completed') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <Header osNumber={inspection.os_number} assetNumber={inspection.asset_number} showOsAsset={true} />
+        <div className="container mx-auto max-w-5xl px-4 py-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Vistoria concluída</h1>
+              <p className="text-sm text-muted-foreground">Relatório de Ativo {inspection.asset_number} · OS {inspection.os_number}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
+              {reportHtml && <Button onClick={() => reportFrame.current?.contentWindow?.print()}>Salvar / imprimir PDF</Button>}
+            </div>
+          </div>
+          {reportLoading ? (
+            <Card><CardContent className="flex items-center justify-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" /> Preparando relatório e fotos…</CardContent></Card>
+          ) : reportError ? (
+            <Card><CardContent className="space-y-4 py-8 text-center">
+              <p className="text-destructive">{reportError}</p>
+              <Button onClick={() => { setReportError(null); fetchInspection(); }}>Tentar carregar novamente</Button>
+            </CardContent></Card>
+          ) : reportHtml ? (
+            <iframe
+              ref={reportFrame}
+              title={`Relatório da vistoria OS ${inspection.os_number}`}
+              srcDoc={reportHtml}
+              className="h-[78vh] min-h-[560px] w-full rounded-lg border bg-white shadow-sm"
+            />
+          ) : null}
+        </div>
+      </div>
+    );
   }
 
   const currentStepData = steps[currentStep];
