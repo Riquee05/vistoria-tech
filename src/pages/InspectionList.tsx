@@ -18,12 +18,9 @@ export default function InspectionList() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchInspections = async () => {
-    if (!profile?.id) return [];
-    
     const { data, error } = await supabase
       .from('inspections')
       .select('*')
-      .eq('profile_id', profile.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -31,8 +28,9 @@ export default function InspectionList() {
   };
 
   const { data, isLoading: loading, error: queryError } = useQuery({
-    queryKey: ['inspections'],
+    queryKey: ['inspections', profile?.id],
     queryFn: fetchInspections,
+    enabled: Boolean(profile?.id),
   });
 
   useEffect(() => {
@@ -104,22 +102,26 @@ export default function InspectionList() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => window.location.href = `/editar-vistoria/${inspection.id}`}
-                                  title="Editar"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="icon"
-                                  onClick={() => handleDelete(inspection.id)}
-                                  title="Excluir"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {inspection.profile_id === profile?.id && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => window.location.href = `/editar-vistoria/${inspection.id}`}
+                                      title="Editar"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="icon"
+                                      onClick={() => handleDelete(inspection.id)}
+                                      title="Excluir"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </CardHeader>
                             <CardContent>
@@ -140,7 +142,7 @@ export default function InspectionList() {
                                   </span>
                                   <span className="px-2 py-1 rounded-md bg-muted">
                                     Responsável:
-                                    <span className="font-medium">{profile?.full_name || 'Técnico'}</span>
+                                    <span className="font-medium">Equipe</span>
                                   </span>
                                 </div>
                               </div>

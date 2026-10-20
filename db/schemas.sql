@@ -98,7 +98,7 @@ DROP POLICY IF EXISTS "inspections_delete" ON inspections;
 
 -- Allow all users to see all inspections (since all are admins)
 CREATE POLICY "inspections_select" ON inspections
-  FOR SELECT USING (true);
+  FOR SELECT TO authenticated USING (true);
 
 -- Allow users to insert their own inspections
 CREATE POLICY "inspections_insert" ON inspections
@@ -122,7 +122,7 @@ DROP POLICY IF EXISTS "inspection_photos_delete" ON inspection_photos;
 
 -- Allow all users to see all inspection photos (since all are admins)
 CREATE POLICY "inspection_photos_select" ON inspection_photos
-  FOR SELECT USING (true);
+  FOR SELECT TO authenticated USING (true);
 
 -- Allow users to insert their own inspection photos
 CREATE POLICY "inspection_photos_insert" ON inspection_photos
@@ -166,7 +166,7 @@ DROP POLICY IF EXISTS "inspection_steps_delete" ON inspection_steps;
 
 -- Allow all users to see all inspection steps (since all are admins)
 CREATE POLICY "inspection_steps_select" ON inspection_steps
-  FOR SELECT USING (true);
+  FOR SELECT TO authenticated USING (true);
 
 -- Allow users to insert their own inspection steps
 CREATE POLICY "inspection_steps_insert" ON inspection_steps
