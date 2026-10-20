@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/layout/Header';
 import { Input } from '@/components/ui/input';
-import { CalendarDays, ClipboardCheck, Edit, Eye, Plus, Search, Trash2, X } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ClipboardCheck, Clock3, Edit, Eye, Plus, Search, Trash2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -18,6 +18,8 @@ export default function InspectionList() {
   const [error, setError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [periodFilter, setPeriodFilter] = useState('all');
 
   const fetchInspections = async () => {
     const { data, error } = await supabase
@@ -57,10 +59,26 @@ export default function InspectionList() {
     }
   };
 
+  const completedCount = inspections.filter(inspection => inspection.status === 'completed').length;
+  const inProgressCount = inspections.filter(inspection => inspection.status === 'in_progress').length;
+  const hasActiveFilters = Boolean(searchTerm || statusFilter !== 'all' || periodFilter !== 'all');
+
   const filteredInspections = inspections.filter(inspection => {
     const term = searchTerm.trim().toLocaleLowerCase('pt-BR');
-    return !term || String(inspection.os_number).toLocaleLowerCase('pt-BR').includes(term)
+    const matchesSearch = !term || String(inspection.os_number).toLocaleLowerCase('pt-BR').includes(term)
       || String(inspection.asset_number).toLocaleLowerCase('pt-BR').includes(term);
+    const matchesStatus = statusFilter === 'all' || inspection.status === statusFilter;
+    const createdAt = new Date(inspection.created_at);
+    const cutoff = periodFilter === '7'
+      ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      : periodFilter === '30'
+        ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        : periodFilter === '90'
+          ? new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+          : periodFilter === 'year'
+            ? new Date(new Date().getFullYear(), 0, 1)
+            : null;
+    return matchesSearch && matchesStatus && (!cutoff || createdAt >= cutoff);
   });
 
   if (isLoading) {
@@ -88,6 +106,27 @@ export default function InspectionList() {
           <Button className="h-11 rounded-xl px-5 shadow-sm" onClick={() => window.location.href = '/nova-vistoria'}>
             <Plus className="mr-2 h-4 w-4" /> Nova vistoria
           </Button>
+        </section>
+
+        <section className="mb-6 grid gap-3 sm:grid-cols-3" aria-label="Resumo das vistorias">
+          <Card className="rounded-2xl border-slate-200 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600"><ClipboardCheck className="h-5 w-5" /></div>
+              <div><p className="text-sm text-slate-500">Total de vistorias</p><p className="text-2xl font-bold text-slate-900">{inspections.length}</p></div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-amber-100 bg-amber-50/60 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><Clock3 className="h-5 w-5" /></div>
+              <div><p className="text-sm text-amber-800">Em andamento</p><p className="text-2xl font-bold text-amber-900">{inProgressCount}</p></div>
+            </CardContent>
+          </Card>
+          <Card className="rounded-2xl border-emerald-100 bg-emerald-50/60 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><CheckCircle2 className="h-5 w-5" /></div>
+              <div><p className="text-sm text-emerald-800">Concluídas</p><p className="text-2xl font-bold text-emerald-900">{completedCount}</p></div>
+            </CardContent>
+          </Card>
         </section>
 
         <Card className="mb-6 rounded-2xl border-slate-200 shadow-sm">
@@ -120,16 +159,56 @@ export default function InspectionList() {
                 <Search className="mr-2 h-4 w-4" /> Pesquisar
               </Button>
             </form>
+            <div className="mt-3 grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-500">
+                Situação
+                <select
+                  value={statusFilter}
+                  onChange={event => setStatusFilter(event.target.value)}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Filtrar por situação"
+                >
+                  <option value="all">Todas as situações</option>
+                  <option value="in_progress">Em andamento</option>
+                  <option value="completed">Concluídas</option>
+                  <option value="archived">Arquivadas</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-500">
+                Período de criação
+                <select
+                  value={periodFilter}
+                  onChange={event => setPeriodFilter(event.target.value)}
+                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Filtrar por período"
+                >
+                  <option value="all">Qualquer período</option>
+                  <option value="7">Últimos 7 dias</option>
+                  <option value="30">Últimos 30 dias</option>
+                  <option value="90">Últimos 90 dias</option>
+                  <option value="year">Este ano</option>
+                </select>
+              </label>
+            </div>
           </CardContent>
         </Card>
 
         <div className="mb-4 flex items-center justify-between px-1">
           <h2 className="text-sm font-semibold text-slate-700">
-            {searchTerm ? 'Resultado da pesquisa' : 'Todas as vistorias'}
+            {hasActiveFilters ? 'Vistorias encontradas' : 'Todas as vistorias'}
           </h2>
-          <span className="text-sm text-slate-500">
-            {filteredInspections.length} {filteredInspections.length === 1 ? 'registro' : 'registros'}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-500">{filteredInspections.length} {filteredInspections.length === 1 ? 'registro' : 'registros'}</span>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                className="text-sm font-medium text-teal-700 hover:text-teal-900"
+                onClick={() => { setSearchInput(''); setSearchTerm(''); setStatusFilter('all'); setPeriodFilter('all'); }}
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
         </div>
 
         {filteredInspections.length === 0 ? (
@@ -144,7 +223,7 @@ export default function InspectionList() {
               <p className="mt-1 max-w-md text-sm text-slate-500">
                 {inspections.length === 0
                   ? 'Crie uma nova vistoria para começar a registrar os equipamentos.'
-                  : 'Confira o número informado ou pesquise por outro número de OS ou ativo.'}
+                  : 'Tente mudar a situação, o período ou pesquisar por outro número de OS ou ativo.'}
               </p>
               {inspections.length === 0 && (
                 <Button className="mt-5 rounded-xl" onClick={() => window.location.href = '/nova-vistoria'}>
