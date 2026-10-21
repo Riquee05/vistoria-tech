@@ -54,7 +54,7 @@ export default function Register() {
       return;
     }
 
-    setSuccess('Cadastro registrado. Se a confirmação por e-mail estiver ativada, confirme o endereço antes de entrar.');
+    setSuccess('Enviamos um link de confirmação para seu e-mail. Abra a mensagem e confirme sua conta para continuar.');
     setIsLoadingLocal(false);
   };
 
@@ -92,24 +92,24 @@ export default function Register() {
                 <div className="rounded-lg bg-emerald-950/60 border border-emerald-800/60 p-4 text-emerald-200 space-y-2">
                   <div className="flex items-center gap-2 font-semibold text-emerald-300">
                     <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                    Conta registrada!
+                    Confira seu e-mail
                   </div>
                   <p className="text-xs leading-relaxed text-emerald-300/90">
-                    O cadastro de <strong>{email}</strong> foi enviado ao Supabase.
-                    Se a confirmação por e-mail estiver ativada, confira sua caixa de entrada e spam antes de entrar.
+                    Enviamos o link para <strong>{email}</strong>. Depois de confirmar, você verá uma mensagem de sucesso e poderá acessar sua conta.
+                    Se não encontrar a mensagem, confira também a pasta de spam.
                   </p>
                 </div>
 
                 <Button asChild className="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2.5">
                   <Link to="/login" className="flex items-center justify-center gap-2">
-                    Ir para o login
+                    Voltar ao login
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
 
                 <div className="text-center">
                   <Link to="/login" className="text-xs text-slate-400 hover:text-white underline">
-                    Ir para tela de login com senha
+                    Já confirmou? Entre com seu e-mail e senha.
                   </Link>
                 </div>
               </div>

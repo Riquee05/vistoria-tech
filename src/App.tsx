@@ -10,6 +10,7 @@ import InspectionList from "@/pages/InspectionList";
 import NewInspection from "@/pages/NewInspection";
 import InspectionDetail from "@/pages/InspectionDetail";
 import NotFound from "@/pages/NotFound";
+import AuthConfirmation from "@/pages/AuthConfirmation";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const AppRoutes = () => (
   <Routes>
+    <Route path="/auth/confirm" element={<AuthConfirmation />} />
     <Route
       path="/register"
       element={
