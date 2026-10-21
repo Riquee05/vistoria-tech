@@ -82,7 +82,7 @@ export default function Register() {
               </span>
             </div>
             <CardDescription className="text-slate-400">
-              Todos os membros cadastrados possuem permissão de Administrador
+              Crie uma conta individual para cada membro da equipe. As vistorias são compartilhadas entre os usuários.
             </CardDescription>
           </CardHeader>
 

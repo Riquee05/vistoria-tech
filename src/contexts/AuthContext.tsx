@@ -85,8 +85,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // 1. Check if demo admin is saved in localStorage
-    const savedDemo = localStorage.getItem(DEMO_STORAGE_KEY);
+    // Demo access is for local development only. Remove old demo sessions in production
+    // so every person must sign in with their own Supabase account.
+    if (!import.meta.env.DEV) {
+      localStorage.removeItem(DEMO_STORAGE_KEY);
+    }
+
+    // 1. Check if demo admin is saved in localStorage during local development
+    const savedDemo = import.meta.env.DEV ? localStorage.getItem(DEMO_STORAGE_KEY) : null;
     if (savedDemo) {
       try {
         const parsed = JSON.parse(savedDemo);
@@ -217,6 +223,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInDemo = () => {
+    if (!import.meta.env.DEV) return;
+
     const demoProfile: Profile = {
       id: 'demo-admin-id-001',
       email: 'admin@vistoriatech.com',

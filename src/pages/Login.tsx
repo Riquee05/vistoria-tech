@@ -27,9 +27,9 @@ export default function Login() {
       if (result.error) {
         const message = result.error.message.toLowerCase();
         if (message.includes('email not confirmed')) {
-          setError('Seu cadastro aguarda a confirmação do e-mail. Confirme a mensagem enviada pelo Supabase ou acesse a demonstração.');
+          setError('Seu cadastro aguarda a confirmação do e-mail. Confirme a mensagem enviada para continuar.');
         } else if (message.includes('invalid login credentials') || message.includes('invalid credentials')) {
-          setError('E-mail ou senha incorretos. Confira seus dados ou acesse a demonstração.');
+          setError('E-mail ou senha incorretos. Confira seus dados ou crie uma conta pessoal.');
         } else {
           setError(result.error.message || 'Não foi possível entrar. Tente novamente.');
         }
@@ -182,24 +182,28 @@ export default function Login() {
                 </Button>
               </form>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="w-full border-t border-slate-200" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-3 text-slate-500">ou</span>
-                </div>
-              </div>
+              {import.meta.env.DEV && (
+                <>
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                      <div className="w-full border-t border-slate-200" />
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="bg-white px-3 text-slate-500">ou</span>
+                    </div>
+                  </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleDemoAccess}
-                className="h-11 w-full border-slate-300 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-              >
-                <Sparkles className="h-4 w-4 text-sky-600" aria-hidden="true" />
-                Acessar demonstração
-              </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDemoAccess}
+                    className="h-11 w-full border-slate-300 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    <Sparkles className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                    Acessar demonstração
+                  </Button>
+                </>
+              )}
             </CardContent>
 
             <CardFooter className="mt-6 flex-col border-t border-slate-100 px-6 pb-6 pt-5 text-center sm:px-8">

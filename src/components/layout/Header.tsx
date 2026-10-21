@@ -1,9 +1,10 @@
 import { ClipboardList, LogOut, User, Menu, X, Pencil, Plus, Smartphone } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PWA_INSTALL_PROMPT_CHANGED } from '@/lib/pwa-install';
 import {
   Dialog,
   DialogContent,
@@ -27,9 +28,46 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
   const [profileError, setProfileError] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
   const [isInstallDialogOpen, setIsInstallDialogOpen] = useState(false);
+  const [canInstallApp, setCanInstallApp] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
   const [qrCodeFailed, setQrCodeFailed] = useState(false);
   const installUrl = 'https://vistoria-tech.vercel.app/';
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(installUrl)}`;
+
+  useEffect(() => {
+    const syncInstallState = () => {
+      setCanInstallApp(Boolean(window.vtDeferredInstallPrompt));
+      setIsAppInstalled(
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (navigator as Navigator & { standalone?: boolean }).standalone === true,
+      );
+    };
+
+    syncInstallState();
+    window.addEventListener(PWA_INSTALL_PROMPT_CHANGED, syncInstallState);
+    return () => window.removeEventListener(PWA_INSTALL_PROMPT_CHANGED, syncInstallState);
+  }, []);
+
+  const handleInstallApp = async () => {
+    const installPrompt = window.vtDeferredInstallPrompt;
+    if (!installPrompt) return;
+
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    window.vtDeferredInstallPrompt = null;
+    setCanInstallApp(false);
+    setIsAppInstalled(
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true,
+    );
+    window.dispatchEvent(new Event(PWA_INSTALL_PROMPT_CHANGED));
+  };
+
+  const openInstallHelp = () => {
+    setIsMenuOpen(false);
+    setQrCodeFailed(false);
+    setIsInstallDialogOpen(true);
+  };
 
   const openProfileDialog = () => {
     setNameDraft(profile?.full_name || '');
@@ -83,7 +121,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
             variant="outline"
             size="sm"
             className="hidden md:inline-flex"
-            onClick={() => setIsInstallDialogOpen(true)}
+            onClick={openInstallHelp}
           >
             <Smartphone className="h-4 w-4" />
             Instalar no celular
@@ -157,11 +195,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
             </Link>
             <button
               type="button"
-              onClick={() => {
-                setIsMenuOpen(false);
-                setQrCodeFailed(false);
-                setIsInstallDialogOpen(true);
-              }}
+              onClick={openInstallHelp}
               className="flex min-h-11 items-center gap-3 rounded-md px-3 text-left text-sm font-medium hover:bg-accent"
             >
               <Smartphone className="h-4 w-4" />
@@ -245,33 +279,43 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
       <Dialog open={isInstallDialogOpen} onOpenChange={setIsInstallDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Instale o VistoriaTech</DialogTitle>
+            <DialogTitle>{isAppInstalled ? 'VistoriaTech instalado' : 'Instale o VistoriaTech'}</DialogTitle>
             <DialogDescription>
-              Escaneie este QR Code com a câmera do celular para abrir o app.
+              {isAppInstalled
+                ? 'O aplicativo já está instalado neste dispositivo.'
+                : 'Adicione o app à tela inicial do celular para acessá-lo como um aplicativo.'}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4">
-            {qrCodeFailed ? (
-              <p className="rounded-md bg-muted p-4 text-center text-sm text-muted-foreground">
-                Não foi possível carregar o QR Code. Abra o VistoriaTech no celular pelo link abaixo.
-              </p>
-            ) : (
-              <img
-                src={qrCodeUrl}
-                alt="QR Code para abrir o VistoriaTech no celular"
-                width={240}
-                height={240}
-                className="rounded-lg border bg-white p-2"
-                onError={() => setQrCodeFailed(true)}
-              />
+            {!isAppInstalled && canInstallApp && (
+              <Button className="w-full" onClick={() => void handleInstallApp()}>
+                <Smartphone className="h-4 w-4" />
+                Instalar aplicativo
+              </Button>
             )}
-            <div className="w-full space-y-2 text-sm text-muted-foreground">
-              <p><span className="font-medium text-foreground">Android:</span> no navegador, abra o menu ⋮ e escolha “Instalar app” ou “Adicionar à tela inicial”.</p>
-              <p><span className="font-medium text-foreground">iPhone:</span> no Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”.</p>
-            </div>
-            <Button asChild className="w-full">
-              <a href={installUrl} target="_blank" rel="noreferrer">Abrir VistoriaTech</a>
-            </Button>
+            {!isAppInstalled && !canInstallApp && (
+              <div className="w-full space-y-2 text-sm text-muted-foreground">
+                <p><span className="font-medium text-foreground">Android:</span> no Chrome, abra o menu ⋮ e escolha “Instalar app” ou “Adicionar à tela inicial”.</p>
+                <p><span className="font-medium text-foreground">iPhone:</span> no Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”.</p>
+              </div>
+            )}
+            {!isAppInstalled && (
+              <div className="hidden w-full flex-col items-center gap-2 border-t pt-4 md:flex">
+                {qrCodeFailed ? (
+                  <p className="text-center text-sm text-muted-foreground">Não foi possível carregar o QR Code.</p>
+                ) : (
+                  <img
+                    src={qrCodeUrl}
+                    alt="QR Code para abrir o VistoriaTech no celular"
+                    width={200}
+                    height={200}
+                    className="rounded-lg border bg-white p-2"
+                    onError={() => setQrCodeFailed(true)}
+                  />
+                )}
+                <p className="text-center text-xs text-muted-foreground">No computador? Escaneie para abrir o app no celular.</p>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

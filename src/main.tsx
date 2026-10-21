@@ -1,6 +1,9 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./globals.css";
+import { registerPwaInstallPrompt } from "./lib/pwa-install";
+
+registerPwaInstallPrompt();
 
 createRoot(document.getElementById("root")!).render(<App />);
 
