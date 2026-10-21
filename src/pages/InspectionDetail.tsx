@@ -85,7 +85,14 @@ export default function InspectionDetail() {
         .eq('inspection_id', id);
 
       if (photosError) throw photosError;
-      setPhotos(photosData || []);
+      const photosWithUrls = await Promise.all((photosData || []).map(async photo => {
+        const { data, error } = await supabase.storage
+          .from('inspection-photos')
+          .createSignedUrl(photo.file_path, 60 * 60 * 12);
+        if (error || !data?.signedUrl) throw error || new Error('Não foi possível carregar uma foto.');
+        return { ...photo, signed_url: data.signedUrl };
+      }));
+      setPhotos(photosWithUrls);
 
       if (inspectionData.status === 'completed') {
         setReportLoading(true);
@@ -249,7 +256,17 @@ export default function InspectionDetail() {
       });
 
     if (dbError) {
+      await supabase.storage.from('inspection-photos').remove([filePath]);
       toast({ title: 'Erro', description: 'Erro ao salvar foto', variant: 'destructive' });
+      return;
+    }
+
+    const { data: signedPhoto, error: signedPhotoError } = await supabase.storage
+      .from('inspection-photos')
+      .createSignedUrl(filePath, 60 * 60 * 12);
+    if (signedPhotoError || !signedPhoto?.signedUrl) {
+      toast({ title: 'Foto salva', description: 'Reabra a vistoria para carregar a imagem.', variant: 'destructive' });
+      await fetchInspection();
       return;
     }
 
@@ -263,6 +280,7 @@ export default function InspectionDetail() {
       file_size: compressed.size,
       mime_type: compressed.type,
       uploaded_at: new Date().toISOString(),
+      signed_url: signedPhoto.signedUrl,
     };
     setPhotos(prev => [...prev, newPhoto]);
 
@@ -460,7 +478,7 @@ export default function InspectionDetail() {
                   {stepPhotos.map((photo: any) => (
                     <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden border">
                       <img
-                        src={supabase.storage.from('inspection-photos').getPublicUrl(photo.file_path).data.publicUrl}
+                        src={photo.signed_url}
                         alt={photo.file_name}
                         className="w-full h-full object-cover"
                       />

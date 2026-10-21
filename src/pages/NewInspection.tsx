@@ -34,7 +34,7 @@ export default function NewInspection() {
         .from('inspections')
         .insert({
           profile_id: profile.id,
-          os_number: osNumber.trim(),
+          os_number: osNumber.trim() || null,
           asset_number: assetNumber.trim(),
           status: 'in_progress',
         })

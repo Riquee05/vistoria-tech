@@ -19,7 +19,7 @@ CREATE TABLE profiles (
 CREATE TABLE inspections (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  os_number TEXT NOT NULL,
+  os_number TEXT,
   asset_number TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('in_progress', 'completed', 'archived')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -72,21 +72,17 @@ DROP POLICY IF EXISTS "profiles_insert" ON profiles;
 DROP POLICY IF EXISTS "profiles_update" ON profiles;
 DROP POLICY IF EXISTS "profiles_delete" ON profiles;
 
--- Allow all users to see all profiles (since all are admins)
+-- Authenticated users can read their own profile only.
 CREATE POLICY "profiles_select" ON profiles
-  FOR SELECT USING (true);
+  FOR SELECT TO authenticated USING (auth.uid() = id);
 
 -- Allow users to insert their own profile (id must match their auth user id)
 CREATE POLICY "profiles_insert" ON profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
 -- Allow users to update their own profile
 CREATE POLICY "profiles_update" ON profiles
-  FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
-
--- Allow users to delete their own profile
-CREATE POLICY "profiles_delete" ON profiles
-  FOR DELETE USING (auth.uid() = id);
+  FOR UPDATE TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
 -- Inspections table RLS
 ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
@@ -102,15 +98,15 @@ CREATE POLICY "inspections_select" ON inspections
 
 -- Allow users to insert their own inspections
 CREATE POLICY "inspections_insert" ON inspections
-  FOR INSERT WITH CHECK (auth.uid() = profile_id);
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = profile_id);
 
 -- Allow users to update their own inspections
 CREATE POLICY "inspections_update" ON inspections
-  FOR UPDATE USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
+  FOR UPDATE TO authenticated USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
 
 -- Allow users to delete their own inspections
 CREATE POLICY "inspections_delete" ON inspections
-  FOR DELETE USING (auth.uid() = profile_id);
+  FOR DELETE TO authenticated USING (auth.uid() = profile_id);
 
 -- Inspection photos table RLS
 ALTER TABLE inspection_photos ENABLE ROW LEVEL SECURITY;
@@ -126,7 +122,7 @@ CREATE POLICY "inspection_photos_select" ON inspection_photos
 
 -- Allow users to insert their own inspection photos
 CREATE POLICY "inspection_photos_insert" ON inspection_photos
-  FOR INSERT WITH CHECK (
+  FOR INSERT TO authenticated WITH CHECK (
     EXISTS (
       SELECT 1 FROM inspections
       WHERE id = inspection_id AND profile_id = auth.uid()
@@ -135,7 +131,7 @@ CREATE POLICY "inspection_photos_insert" ON inspection_photos
 
 -- Allow users to update their own inspection photos
 CREATE POLICY "inspection_photos_update" ON inspection_photos
-  FOR UPDATE USING (
+  FOR UPDATE TO authenticated USING (
     EXISTS (
       SELECT 1 FROM inspections
       WHERE id = inspection_id AND profile_id = auth.uid()
@@ -149,7 +145,7 @@ CREATE POLICY "inspection_photos_update" ON inspection_photos
 
 -- Allow users to delete their own inspection photos
 CREATE POLICY "inspection_photos_delete" ON inspection_photos
-  FOR DELETE USING (
+  FOR DELETE TO authenticated USING (
     EXISTS (
       SELECT 1 FROM inspections
       WHERE id = inspection_id AND profile_id = auth.uid()
@@ -170,7 +166,7 @@ CREATE POLICY "inspection_steps_select" ON inspection_steps
 
 -- Allow users to insert their own inspection steps
 CREATE POLICY "inspection_steps_insert" ON inspection_steps
-  FOR INSERT WITH CHECK (
+  FOR INSERT TO authenticated WITH CHECK (
     EXISTS (
       SELECT 1 FROM inspections
       WHERE id = inspection_id AND profile_id = auth.uid()
@@ -179,7 +175,7 @@ CREATE POLICY "inspection_steps_insert" ON inspection_steps
 
 -- Allow users to update their own inspection steps
 CREATE POLICY "inspection_steps_update" ON inspection_steps
-  FOR UPDATE USING (
+  FOR UPDATE TO authenticated USING (
     EXISTS (
       SELECT 1 FROM inspections
       WHERE id = inspection_id AND profile_id = auth.uid()
@@ -193,7 +189,7 @@ CREATE POLICY "inspection_steps_update" ON inspection_steps
 
 -- Allow users to delete their own inspection steps
 CREATE POLICY "inspection_steps_delete" ON inspection_steps
-  FOR DELETE USING (
+  FOR DELETE TO authenticated USING (
     EXISTS (
       SELECT 1 FROM inspections
       WHERE id = inspection_id AND profile_id = auth.uid()
@@ -234,7 +230,7 @@ RETURNS BOOLEAN AS $$
 BEGIN
   RETURN true;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- Function to get user role
 -- All users are admins (per user requirement)
@@ -243,7 +239,12 @@ RETURNS TEXT AS $$
 BEGIN
   RETURN 'admin';
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO supabase_auth_admin;
+REVOKE ALL ON FUNCTION public.is_admin(UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.get_user_role(UUID) FROM PUBLIC, anon, authenticated;
 
 -- Indexes for performance
 CREATE INDEX idx_inspections_profile_id ON inspections(profile_id);
@@ -268,19 +269,37 @@ COMMENT ON COLUMN inspection_steps.additional_software IS 'Software adicional de
 -- Storage bucket for photos
 -- Creates the bucket for inspection photos
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('inspection-photos', 'inspection-photos', true)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('inspection-photos', 'inspection-photos', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
 
 -- Storage policies
 DROP POLICY IF EXISTS "Users can upload to inspection-photos" ON storage.objects;
 DROP POLICY IF EXISTS "Users can view inspection-photos" ON storage.objects;
+DROP POLICY IF EXISTS "Public can view inspection-photos" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete from inspection-photos" ON storage.objects;
 
 CREATE POLICY "Users can upload to inspection-photos" ON storage.objects
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+  FOR INSERT TO authenticated WITH CHECK (
+    bucket_id = 'inspection-photos' AND EXISTS (
+      SELECT 1 FROM public.inspections
+      WHERE id::text = split_part(storage.objects.name, '/', 1)
+        AND profile_id = auth.uid()
+    )
+  );
 
-CREATE POLICY "Public can view inspection-photos" ON storage.objects
-  FOR SELECT USING (true);
+CREATE POLICY "Users can view inspection-photos" ON storage.objects
+  FOR SELECT TO authenticated USING (
+    bucket_id = 'inspection-photos' AND EXISTS (
+      SELECT 1 FROM public.inspection_photos
+      WHERE file_path = storage.objects.name
+    )
+  );
 
 CREATE POLICY "Users can delete from inspection-photos" ON storage.objects
-  FOR DELETE USING (auth.uid() IS NOT NULL);
+  FOR DELETE TO authenticated USING (
+    bucket_id = 'inspection-photos' AND EXISTS (
+      SELECT 1 FROM public.inspections
+      WHERE id::text = split_part(storage.objects.name, '/', 1)
+        AND profile_id = auth.uid()
+    )
+  );

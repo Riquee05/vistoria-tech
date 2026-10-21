@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 
 interface HeaderProps {
-  osNumber?: string;
+  osNumber?: string | null;
   assetNumber?: string;
   showOsAsset?: boolean;
 }

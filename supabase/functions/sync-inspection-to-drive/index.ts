@@ -11,61 +11,21 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 
-const encodeBase64Url = (value: string | Uint8Array) => {
-  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-};
-
-const privateKeyToCryptoKey = async (privateKey: string) => {
-  const pem = privateKey.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
-  const body = pem.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/)?.[1];
-  if (!body) throw new Error('Invalid Google service account private key');
-  const base64 = body.replace(/[^A-Za-z0-9+/=]/g, '');
-  const binary = atob(base64);
-  const keyData = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-
-  return crypto.subtle.importKey(
-    'pkcs8',
-    keyData,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-};
-
-const getGoogleAccessToken = async (clientEmail: string, privateKey: string) => {
-  const now = Math.floor(Date.now() / 1000);
-  const encodedHeader = encodeBase64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const encodedPayload = encodeBase64Url(JSON.stringify({
-    iss: clientEmail,
-    scope: 'https://www.googleapis.com/auth/drive',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  }));
-  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-  const key = await privateKeyToCryptoKey(privateKey);
-  const signature = new Uint8Array(
-    await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsignedToken)),
-  );
-  const assertion = `${unsignedToken}.${encodeBase64Url(signature)}`;
-
+const getGoogleAccessToken = async (clientId: string, clientSecret: string, refreshToken: string) => {
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion,
+      grant_type: 'refresh_token', client_id: clientId,
+      client_secret: clientSecret, refresh_token: refreshToken,
     }),
   });
-
-  if (!response.ok) throw new Error(`Google authentication failed: ${await response.text()}`);
-  const { access_token } = await response.json();
-  return access_token as string;
+  const result = await response.json();
+  if (!response.ok || !result.access_token) {
+    throw new Error('Google authorization failed. Reconnect the Google account.');
+  }
+  return result.access_token as string;
 };
-
 const safeFolderName = (value: string) => value.replace(/[\\/:*?"<>|]/g, '-').trim();
 
 const createDriveFolder = async (accessToken: string, name: string, parentId?: string) => {
@@ -115,12 +75,13 @@ Deno.serve(async (request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const googleClientEmail = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_EMAIL');
-    const googlePrivateKey = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY');
+    const googleClientId = Deno.env.get('GOOGLE_OAUTH_CLIENT_ID');
+    const googleClientSecret = Deno.env.get('GOOGLE_OAUTH_CLIENT_SECRET');
+    const googleRefreshToken = Deno.env.get('GOOGLE_OAUTH_REFRESH_TOKEN');
     const parentFolderId = Deno.env.get('GOOGLE_DRIVE_PARENT_FOLDER_ID');
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
 
-    if (!supabaseUrl || !serviceRoleKey || !googleClientEmail || !googlePrivateKey) {
+    if (!supabaseUrl || !serviceRoleKey || !googleClientId || !googleClientSecret || !googleRefreshToken) {
       return json({ error: 'Google Drive integration is not configured' }, 500);
     }
     if (!token) return json({ error: 'Unauthorized' }, 401);
@@ -146,9 +107,13 @@ Deno.serve(async (request) => {
       .eq('inspection_id', inspectionId);
     if (photosError) throw photosError;
 
-    const accessToken = await getGoogleAccessToken(googleClientEmail, googlePrivateKey);
+    const accessToken = await getGoogleAccessToken(googleClientId, googleClientSecret, googleRefreshToken);
     const existingFolderId = photos?.find((photo) => photo.google_drive_folder_id)?.google_drive_folder_id;
-    const folderName = `Ativo ${safeFolderName(inspection.asset_number)} - OS ${safeFolderName(inspection.os_number)}`;
+    const osNumber = inspection.os_number?.trim() || null;
+    const osLabel = osNumber
+      ? `OS ${safeFolderName(osNumber)}`
+      : 'Sem OS';
+    const folderName = `Ativo ${safeFolderName(inspection.asset_number)} - ${osLabel}`;
     const folderId = existingFolderId || await createDriveFolder(accessToken, folderName, parentFolderId);
     let uploadedFiles = 0;
 

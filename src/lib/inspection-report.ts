@@ -12,7 +12,7 @@ export type ReportPhoto = { step_id: string; file_path: string; file_name: strin
 export type ReportInspection = {
   id: string;
   asset_number: string;
-  os_number: string;
+  os_number: string | null;
   status: string;
   created_at: string;
   completed_at?: string | null;

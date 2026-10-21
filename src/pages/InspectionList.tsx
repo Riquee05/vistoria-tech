@@ -73,7 +73,7 @@ export default function InspectionList() {
 
   const filteredInspections = inspections.filter(inspection => {
     const term = searchTerm.trim().toLocaleLowerCase('pt-BR');
-    const matchesSearch = !term || String(inspection.os_number).toLocaleLowerCase('pt-BR').includes(term)
+    const matchesSearch = !term || String(inspection.os_number ?? '').toLocaleLowerCase('pt-BR').includes(term)
       || String(inspection.asset_number).toLocaleLowerCase('pt-BR').includes(term);
     const matchesStatus = statusFilter === 'all' || inspection.status === statusFilter;
     const createdAt = new Date(inspection.created_at);

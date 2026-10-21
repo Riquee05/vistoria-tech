@@ -38,7 +38,7 @@ export type Database = {
         Row: {
           id: string;
           profile_id: string;
-          os_number: string;
+          os_number: string | null;
           asset_number: string;
           status: 'in_progress' | 'completed' | 'archived';
           created_at: string;
@@ -48,7 +48,7 @@ export type Database = {
         Insert: {
           id?: string;
           profile_id: string;
-          os_number: string;
+          os_number: string | null;
           asset_number: string;
           status?: 'in_progress' | 'completed' | 'archived';
           created_at?: string;
@@ -58,7 +58,7 @@ export type Database = {
         Update: {
           id?: string;
           profile_id?: string;
-          os_number?: string;
+          os_number?: string | null;
           asset_number?: string;
           status?: 'in_progress' | 'completed' | 'archived';
           created_at?: string;

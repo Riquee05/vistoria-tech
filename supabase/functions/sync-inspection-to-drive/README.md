@@ -1,24 +1,20 @@
 # Envio de vistorias para o Google Drive
 
-Esta função é chamada ao finalizar uma vistoria. Ela cria uma pasta com o nome `Ativo ATIVO - OS NÚMERO` e envia todas as fotos dessa vistoria para ela.
+Ao enviar fotos ou concluir uma vistoria, a função cria uma pasta `Ativo NÚMERO - OS NÚMERO` (ou `Ativo NÚMERO - Sem OS`) dentro da pasta configurada e copia as fotos ainda não sincronizadas.
 
-## Configuração única
+## Configuração
 
-1. No Google Cloud, crie uma conta de serviço e habilite a Google Drive API.
-2. Crie ou escolha a pasta do Google Drive que receberá as vistorias e compartilhe-a com o e-mail da conta de serviço como **Editor**.
-3. No projeto Supabase, registre os segredos abaixo. A chave privada deve manter as quebras de linha como `\n`:
+1. Habilite a Google Drive API no projeto Google Cloud e crie um cliente OAuth para uma conta Google que tenha acesso à pasta de destino.
+2. Autorize o cliente com o escopo `https://www.googleapis.com/auth/drive` e gere um refresh token. A conta Google autorizada precisa ter permissão de edição na pasta de destino.
+3. Cadastre estes segredos no projeto Supabase:
 
-```bash
-supabase secrets set GOOGLE_SERVICE_ACCOUNT_EMAIL="conta@projeto.iam.gserviceaccount.com"
-supabase secrets set GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-supabase secrets set GOOGLE_DRIVE_PARENT_FOLDER_ID="id-da-pasta-principal"
-```
+   - `GOOGLE_OAUTH_CLIENT_ID`
+   - `GOOGLE_OAUTH_CLIENT_SECRET`
+   - `GOOGLE_OAUTH_REFRESH_TOKEN`
+   - `GOOGLE_DRIVE_PARENT_FOLDER_ID`
 
-4. Publique a função:
+   Nunca coloque esses valores no frontend, em `.env` versionado ou no Git.
 
-```bash
-supabase functions deploy sync-inspection-to-drive
-```
+4. Publique a Edge Function `sync-inspection-to-drive`.
 
-As credenciais ficam apenas nos segredos do Supabase; nunca devem ser adicionadas ao arquivo `.env` do front-end.
-
+A função valida a sessão e só sincroniza vistorias pertencentes ao usuário autenticado. Os IDs de arquivo já sincronizados são reaproveitados para evitar duplicar fotos em novas tentativas.
