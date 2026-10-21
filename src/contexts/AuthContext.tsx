@@ -17,6 +17,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ data: any; error: Error | null }>;
+  updateProfileName: (fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   signInDemo: () => void;
 }
@@ -183,6 +184,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { data, error };
   };
 
+  const updateProfileName = async (fullName: string) => {
+    const normalizedName = fullName.trim();
+    if (!normalizedName) return { error: new Error('Informe um nome para o perfil.') };
+    if (!user) return { error: new Error('Entre na sua conta para alterar o perfil.') };
+
+    if (user.id === 'demo-admin-id-001') {
+      const updatedProfile = profile ? { ...profile, full_name: normalizedName } : null;
+      if (updatedProfile) {
+        localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(updatedProfile));
+        setProfile(updatedProfile);
+      }
+      return { error: null };
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: normalizedName })
+      .eq('id', user.id);
+
+    if (error) return { error };
+
+    setProfile(current => current ? { ...current, full_name: normalizedName } : current);
+    return { error: null };
+  };
+
   const signOut = async () => {
     localStorage.removeItem(DEMO_STORAGE_KEY);
     setUser(null);
@@ -211,6 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         signIn,
         signUp,
+        updateProfileName,
         signOut,
         signInDemo,
       }}
