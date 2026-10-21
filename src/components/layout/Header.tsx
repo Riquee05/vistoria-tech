@@ -1,5 +1,6 @@
-import { LogOut, User, Menu, X, Pencil } from 'lucide-react';
+import { ClipboardList, LogOut, User, Menu, X, Pencil, Plus, Smartphone } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,10 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
   const [nameDraft, setNameDraft] = useState('');
   const [profileError, setProfileError] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
+  const [isInstallDialogOpen, setIsInstallDialogOpen] = useState(false);
+  const [qrCodeFailed, setQrCodeFailed] = useState(false);
+  const installUrl = 'https://vistoria-tech.vercel.app/';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(installUrl)}`;
 
   const openProfileDialog = () => {
     setNameDraft(profile?.full_name || '');
@@ -74,6 +79,15 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
         )}
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="hidden md:inline-flex"
+            onClick={() => setIsInstallDialogOpen(true)}
+          >
+            <Smartphone className="h-4 w-4" />
+            Instalar no celular
+          </Button>
           {profile && (
             <div className="hidden sm:flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-muted-foreground" />
@@ -84,6 +98,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
             <Button
               variant="ghost"
               size="icon"
+              className="hidden md:inline-flex"
               onClick={openProfileDialog}
               title="Alterar nome do perfil"
               aria-label="Alterar nome do perfil"
@@ -94,8 +109,10 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
           <Button
             variant="ghost"
             size="icon"
+            className="hidden md:inline-flex"
             onClick={signOut}
             title="Sair"
+            aria-label="Sair"
           >
             <LogOut className="h-5 w-5" />
           </Button>
@@ -104,11 +121,79 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
             size="icon"
             className="md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
+
+      {isMenuOpen && (
+        <nav id="mobile-navigation" className="md:hidden border-t bg-background px-4 py-3 shadow-lg">
+          {profile && (
+            <div className="mb-3 flex items-center gap-2 border-b pb-3 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span className="truncate">{profile.full_name || profile.email}</span>
+            </div>
+          )}
+          <div className="grid gap-1">
+            <Link
+              to="/"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium hover:bg-accent"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Vistorias
+            </Link>
+            <Link
+              to="/nova-vistoria"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium hover:bg-accent"
+            >
+              <Plus className="h-4 w-4" />
+              Nova vistoria
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setQrCodeFailed(false);
+                setIsInstallDialogOpen(true);
+              }}
+              className="flex min-h-11 items-center gap-3 rounded-md px-3 text-left text-sm font-medium hover:bg-accent"
+            >
+              <Smartphone className="h-4 w-4" />
+              Instalar no celular
+            </button>
+            {profile && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  openProfileDialog();
+                }}
+                className="flex min-h-11 items-center gap-3 rounded-md px-3 text-left text-sm font-medium hover:bg-accent"
+              >
+                <Pencil className="h-4 w-4" />
+                Alterar nome do perfil
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false);
+                void signOut();
+              }}
+              className="flex min-h-11 items-center gap-3 rounded-md px-3 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
+          </div>
+        </nav>
+      )}
 
       {/* Mobile OS/Ativo bar */}
       {showOsAsset && osNumber && assetNumber && (
@@ -154,6 +239,40 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isInstallDialogOpen} onOpenChange={setIsInstallDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Instale o VistoriaTech</DialogTitle>
+            <DialogDescription>
+              Escaneie este QR Code com a câmera do celular para abrir o app.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4">
+            {qrCodeFailed ? (
+              <p className="rounded-md bg-muted p-4 text-center text-sm text-muted-foreground">
+                Não foi possível carregar o QR Code. Abra o VistoriaTech no celular pelo link abaixo.
+              </p>
+            ) : (
+              <img
+                src={qrCodeUrl}
+                alt="QR Code para abrir o VistoriaTech no celular"
+                width={240}
+                height={240}
+                className="rounded-lg border bg-white p-2"
+                onError={() => setQrCodeFailed(true)}
+              />
+            )}
+            <div className="w-full space-y-2 text-sm text-muted-foreground">
+              <p><span className="font-medium text-foreground">Android:</span> no navegador, abra o menu ⋮ e escolha “Instalar app” ou “Adicionar à tela inicial”.</p>
+              <p><span className="font-medium text-foreground">iPhone:</span> no Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”.</p>
+            </div>
+            <Button asChild className="w-full">
+              <a href={installUrl} target="_blank" rel="noreferrer">Abrir VistoriaTech</a>
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </header>
