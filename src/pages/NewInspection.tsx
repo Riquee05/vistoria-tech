@@ -49,7 +49,7 @@ export default function NewInspection() {
 
       toast({
         title: 'Vistoria criada!',
-        description: `OS: ${osNumber} - Ativo: ${assetNumber}`,
+        description: `Ativo: ${assetNumber} - OS: ${osNumber}`,
       });
 
       navigate(`/vistoria/${data.id}`);

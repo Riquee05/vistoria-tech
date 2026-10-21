@@ -108,10 +108,10 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
         {showOsAsset && osNumber && assetNumber && (
           <div className="hidden md:flex items-center gap-2 text-sm">
             <span className="rounded-md bg-muted px-2 py-1">
-              OS: <span className="font-medium">{osNumber}</span>
+              Ativo: <span className="font-medium">{assetNumber}</span>
             </span>
             <span className="rounded-md bg-muted px-2 py-1">
-              Ativo: <span className="font-medium">{assetNumber}</span>
+              OS: <span className="font-medium">{osNumber}</span>
             </span>
           </div>
         )}
@@ -234,10 +234,10 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
         <div className="md:hidden border-t bg-muted/50 px-4 py-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="rounded-md bg-background px-2 py-1">
-              OS: <span className="font-medium">{osNumber}</span>
+              Ativo: <span className="font-medium">{assetNumber}</span>
             </span>
             <span className="rounded-md bg-background px-2 py-1">
-              Ativo: <span className="font-medium">{assetNumber}</span>
+              OS: <span className="font-medium">{osNumber}</span>
             </span>
           </div>
         </div>

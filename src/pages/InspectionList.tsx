@@ -261,12 +261,12 @@ export default function InspectionList() {
                         <div className="min-w-0 flex-1">
                           <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:flex sm:items-center sm:gap-8">
                             <div>
-                              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ordem de serviço</p>
-                              <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{inspection.os_number}</p>
-                            </div>
-                            <div>
                               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ativo</p>
                               <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{inspection.asset_number}</p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ordem de serviço</p>
+                              <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{inspection.os_number}</p>
                             </div>
                           </div>
                           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
