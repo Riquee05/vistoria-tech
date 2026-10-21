@@ -73,17 +73,6 @@ export default function NewInspection() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="osNumber">Número da OS (Ordem de Serviço) *</Label>
-                <Input
-                  id="osNumber"
-                  type="text"
-                  placeholder="Ex: 2025-001"
-                  value={osNumber}
-                  onChange={(e) => setOsNumber(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="assetNumber">Número do Ativo *</Label>
                 <Input
                   id="assetNumber"
@@ -91,6 +80,17 @@ export default function NewInspection() {
                   placeholder="Ex: NB-0042"
                   value={assetNumber}
                   onChange={(e) => setAssetNumber(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="osNumber">Número da OS (Ordem de Serviço) *</Label>
+                <Input
+                  id="osNumber"
+                  type="text"
+                  placeholder="Ex: 2025-001"
+                  value={osNumber}
+                  onChange={(e) => setOsNumber(e.target.value)}
                   required
                 />
               </div>
