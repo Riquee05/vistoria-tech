@@ -108,7 +108,7 @@ export default function InspectionList() {
         )}
         <section className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-teal-800">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-800">
               <ClipboardCheck className="h-4 w-4" /> Gestão de inspeções
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">Histórico de vistorias</h1>
@@ -215,7 +215,7 @@ export default function InspectionList() {
             {hasActiveFilters && (
               <button
                 type="button"
-                className="text-sm font-medium text-teal-700 hover:text-teal-900"
+                className="text-sm font-medium text-violet-700 hover:text-violet-900"
                 onClick={() => { setSearchInput(''); setSearchTerm(''); setStatusFilter('all'); setPeriodFilter('all'); }}
               >
                 Limpar filtros
@@ -255,7 +255,7 @@ export default function InspectionList() {
                   <CardContent className="p-4 sm:p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-start gap-4">
-                        <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 sm:flex">
+                        <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700 sm:flex">
                           <ClipboardCheck className="h-6 w-6" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -266,7 +266,7 @@ export default function InspectionList() {
                             </div>
                             <div>
                               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ordem de serviço</p>
-                              <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{inspection.os_number}</p>
+                              <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{inspection.os_number || 'Não informada'}</p>
                             </div>
                           </div>
                           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">

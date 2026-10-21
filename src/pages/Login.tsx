@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, ArrowRight, ClipboardCheck, Laptop, ShieldCheck, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowRight, ClipboardCheck, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function Login() {
   const { signIn, signInDemo } = useAuth();
@@ -53,20 +53,18 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-2">
       <aside className="relative hidden min-h-screen overflow-hidden bg-slate-950 px-12 py-12 text-white lg:flex lg:flex-col lg:justify-between xl:px-20">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-sky-500/15 blur-3xl" />
-          <div className="absolute -bottom-48 -right-24 h-[34rem] w-[34rem] rounded-full bg-blue-700/20 blur-3xl" />
+          <div className="absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full bg-violet-500/15 blur-3xl" />
+          <div className="absolute -bottom-48 -right-24 h-[34rem] w-[34rem] rounded-full bg-violet-700/20 blur-3xl" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.12)_1px,transparent_0)] [background-size:28px_28px]" />
         </div>
 
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500 text-white shadow-lg shadow-sky-950/50">
-            <Laptop className="h-6 w-6" aria-hidden="true" />
-          </div>
-          <span className="text-lg font-semibold tracking-tight">VistoriaTech</span>
+          <img src="/icons/webancada-mark.svg" alt="" className="h-11 w-11 rounded-xl" />
+          <span className="text-lg font-semibold tracking-tight">WeBancada</span>
         </div>
 
         <div className="relative max-w-xl py-16">
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1.5 text-sm font-medium text-sky-200">
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-300/10 px-3 py-1.5 text-sm font-medium text-violet-200">
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
             Gestão de inspeções técnicas
           </span>
@@ -79,13 +77,13 @@ export default function Login() {
 
           <div className="mt-10 space-y-4 text-sm text-slate-200">
             <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-sky-300">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-violet-300">
                 <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
               </span>
               Histórico de inspeções em um só painel
             </div>
             <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-sky-300">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-violet-300">
                 <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               </span>
               Acesso protegido pela sua conta
@@ -93,16 +91,14 @@ export default function Login() {
           </div>
         </div>
 
-        <p className="relative text-xs text-slate-500">VistoriaTech · Inspeção de notebooks em bancada</p>
+        <p className="relative text-xs text-slate-500">WeBancada · Inspeção de equipamentos em bancada</p>
       </aside>
 
       <main className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-12">
         <div className="w-full max-w-md">
           <div className="mb-7 flex items-center justify-center gap-3 lg:hidden">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600 text-white shadow-md shadow-sky-600/20">
-              <Laptop className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <span className="text-lg font-semibold tracking-tight text-slate-900">VistoriaTech</span>
+            <img src="/icons/webancada-mark.svg" alt="" className="h-10 w-10 rounded-xl" />
+            <span className="text-lg font-semibold tracking-tight text-slate-900">WeBancada</span>
           </div>
 
           <Card className="border-slate-200 bg-white shadow-xl shadow-slate-900/5">
@@ -134,7 +130,7 @@ export default function Login() {
                     placeholder="voce@empresa.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-sky-500"
+                    className="h-11 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-violet-500"
                     aria-invalid={Boolean(error)}
                     required
                   />
@@ -150,7 +146,7 @@ export default function Login() {
                     placeholder="Digite sua senha"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-sky-500"
+                    className="h-11 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-violet-500"
                     aria-invalid={Boolean(error)}
                     required
                   />
@@ -165,7 +161,7 @@ export default function Login() {
 
                 <Button
                   type="submit"
-                  className="h-11 w-full bg-sky-600 font-semibold text-white shadow-sm shadow-sky-600/20 hover:bg-sky-700"
+                  className="h-11 w-full bg-violet-700 font-semibold text-white shadow-sm shadow-violet-700/20 hover:bg-violet-800"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -199,7 +195,7 @@ export default function Login() {
                     onClick={handleDemoAccess}
                     className="h-11 w-full border-slate-300 bg-white font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                   >
-                    <Sparkles className="h-4 w-4 text-sky-600" aria-hidden="true" />
+                    <Sparkles className="h-4 w-4 text-violet-700" aria-hidden="true" />
                     Acessar demonstração
                   </Button>
                 </>
@@ -209,7 +205,7 @@ export default function Login() {
             <CardFooter className="mt-6 flex-col border-t border-slate-100 px-6 pb-6 pt-5 text-center sm:px-8">
               <p className="text-sm text-slate-500">
                 Primeiro acesso?{' '}
-                <Link to="/register" className="font-semibold text-sky-700 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2">
+                <Link to="/register" className="font-semibold text-violet-800 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2">
                   Criar conta
                 </Link>
               </p>

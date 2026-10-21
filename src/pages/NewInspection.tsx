@@ -34,8 +34,8 @@ export default function NewInspection() {
         .from('inspections')
         .insert({
           profile_id: profile.id,
-          os_number: osNumber,
-          asset_number: assetNumber,
+          os_number: osNumber.trim(),
+          asset_number: assetNumber.trim(),
           status: 'in_progress',
         })
         .select()
@@ -49,7 +49,7 @@ export default function NewInspection() {
 
       toast({
         title: 'Vistoria criada!',
-        description: `Ativo: ${assetNumber} - OS: ${osNumber}`,
+        description: `Ativo: ${assetNumber.trim()}${osNumber.trim() ? ` - OS: ${osNumber.trim()}` : ''}`,
       });
 
       navigate(`/vistoria/${data.id}`);
@@ -84,14 +84,13 @@ export default function NewInspection() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="osNumber">Número da OS (Ordem de Serviço) *</Label>
+                <Label htmlFor="osNumber">Número da OS (Ordem de Serviço) · opcional</Label>
                 <Input
                   id="osNumber"
                   type="text"
-                  placeholder="Ex: 2025-001"
+                  placeholder="Preencha se houver uma OS"
                   value={osNumber}
                   onChange={(e) => setOsNumber(e.target.value)}
-                  required
                 />
               </div>
               {error && (

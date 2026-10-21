@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Header } from '@/components/layout/Header';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Laptop, ShieldCheck, UserPlus, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { ShieldCheck, UserPlus, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function Register() {
   const { signUp } = useAuth();
@@ -63,10 +63,8 @@ export default function Register() {
       <Header />
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-600 text-white shadow-lg shadow-sky-600/30">
-            <Laptop className="h-7 w-7" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">VistoriaTech</h1>
+          <img src="/icons/webancada-mark.svg" alt="" className="mx-auto h-14 w-14 rounded-2xl" />
+          <h1 className="text-2xl font-bold tracking-tight text-white">WeBancada</h1>
           <p className="text-sm text-slate-400">
             Cadastro de Administrador Técnico
           </p>
@@ -76,7 +74,7 @@ export default function Register() {
           <CardHeader className="space-y-1 pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-semibold text-white">Novo Cadastro</CardTitle>
-              <span className="inline-flex items-center gap-1 text-xs text-sky-400 bg-sky-950/80 border border-sky-800/50 px-2 py-0.5 rounded-full font-medium">
+              <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-950/80 border border-violet-800/50 px-2 py-0.5 rounded-full font-medium">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Perfil: Admin
               </span>
@@ -100,7 +98,7 @@ export default function Register() {
                   </p>
                 </div>
 
-                <Button asChild className="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2.5">
+                <Button asChild className="w-full bg-violet-700 hover:bg-violet-600 text-white font-medium py-2.5">
                   <Link to="/login" className="flex items-center justify-center gap-2">
                     Voltar ao login
                     <ArrowRight className="h-4 w-4" />
@@ -123,7 +121,7 @@ export default function Register() {
                     placeholder="Ex: João Silva"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-sky-500"
+                    className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-violet-500"
                     required
                   />
                 </div>
@@ -136,7 +134,7 @@ export default function Register() {
                     placeholder="seu.email@empresa.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-sky-500"
+                    className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-violet-500"
                     required
                   />
                 </div>
@@ -149,7 +147,7 @@ export default function Register() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-sky-500"
+                    className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus-visible:ring-violet-500"
                     required
                   />
                 </div>
@@ -163,7 +161,7 @@ export default function Register() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2.5 shadow-md shadow-sky-600/25 transition-all"
+                  className="w-full bg-violet-700 hover:bg-violet-600 text-white font-medium py-2.5 shadow-md shadow-violet-700/25 transition-all"
                   disabled={isLoadingLocal}
                 >
                   {isLoadingLocal ? (
@@ -185,7 +183,7 @@ export default function Register() {
           <CardFooter className="flex justify-center border-t border-slate-900 pt-3">
             <p className="text-xs text-slate-400">
               Já tem conta?{' '}
-              <Link to="/login" className="text-sky-400 hover:text-sky-300 font-semibold underline underline-offset-4">
+              <Link to="/login" className="text-violet-300 hover:text-violet-200 font-semibold underline underline-offset-4">
                 Acessar Login
               </Link>
             </p>

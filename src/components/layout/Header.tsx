@@ -98,20 +98,18 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">VT</span>
-          </div>
-          <span className="hidden font-semibold sm:inline-block">VistoriaTech</span>
+          <img src="/icons/webancada-mark.svg" alt="" className="h-9 w-9 rounded-lg" />
+          <span className="hidden font-semibold sm:inline-block">WeBancada</span>
         </div>
 
         {/* OS e Ativo fixos no topo */}
-        {showOsAsset && osNumber && assetNumber && (
+        {showOsAsset && assetNumber && (
           <div className="hidden md:flex items-center gap-2 text-sm">
             <span className="rounded-md bg-muted px-2 py-1">
               Ativo: <span className="font-medium">{assetNumber}</span>
             </span>
             <span className="rounded-md bg-muted px-2 py-1">
-              OS: <span className="font-medium">{osNumber}</span>
+              OS: <span className="font-medium">{osNumber || 'Não informada'}</span>
             </span>
           </div>
         )}
@@ -230,14 +228,14 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
       )}
 
       {/* Mobile OS/Ativo bar */}
-      {showOsAsset && osNumber && assetNumber && (
+      {showOsAsset && assetNumber && (
         <div className="md:hidden border-t bg-muted/50 px-4 py-2">
           <div className="flex items-center gap-2 text-sm">
             <span className="rounded-md bg-background px-2 py-1">
               Ativo: <span className="font-medium">{assetNumber}</span>
             </span>
             <span className="rounded-md bg-background px-2 py-1">
-              OS: <span className="font-medium">{osNumber}</span>
+              OS: <span className="font-medium">{osNumber || 'Não informada'}</span>
             </span>
           </div>
         </div>
@@ -248,7 +246,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
           <DialogHeader>
             <DialogTitle>Alterar nome do perfil</DialogTitle>
             <DialogDescription>
-              Esse nome será exibido no cabeçalho do VistoriaTech.
+              Esse nome será exibido no cabeçalho do WeBancada.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleProfileSave} className="space-y-4">
@@ -279,7 +277,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
       <Dialog open={isInstallDialogOpen} onOpenChange={setIsInstallDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{isAppInstalled ? 'VistoriaTech instalado' : 'Instale o VistoriaTech'}</DialogTitle>
+            <DialogTitle>{isAppInstalled ? 'WeBancada instalado' : 'Instale o WeBancada'}</DialogTitle>
             <DialogDescription>
               {isAppInstalled
                 ? 'O aplicativo já está instalado neste dispositivo.'
@@ -306,7 +304,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
                 ) : (
                   <img
                     src={qrCodeUrl}
-                    alt="QR Code para abrir o VistoriaTech no celular"
+                    alt="QR Code para abrir o WeBancada no celular"
                     width={200}
                     height={200}
                     className="rounded-lg border bg-white p-2"

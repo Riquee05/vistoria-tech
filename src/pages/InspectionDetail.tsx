@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, Camera, AlertCircle, Loader2 } from 'lucide-react';
+import { Check, Camera, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const STEPS = [
@@ -364,7 +364,9 @@ export default function InspectionDetail() {
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Vistoria concluída</h1>
-              <p className="text-sm text-muted-foreground">Relatório de Ativo {inspection.asset_number} · OS {inspection.os_number}</p>
+              <p className="text-sm text-muted-foreground">
+                Relatório de Ativo {inspection.asset_number} · OS {inspection.os_number || 'não informada'}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
@@ -499,25 +501,37 @@ export default function InspectionDetail() {
               )}
 
               {/* Complete Step Button */}
-              <Button
-                className="w-full"
-                onClick={() => handleCompleteStep(currentStepData.id)}
-                disabled={stepPhotos.length === 0 || saving}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : currentStepData.status === 'completed' ? (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Etapa Concluída
-                  </>
-                ) : (
-                  'Concluir Etapa'
-                )}
-              </Button>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setCurrentStep(step => Math.max(0, step - 1))}
+                  disabled={currentStep === 0 || saving}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Etapa anterior
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => handleCompleteStep(currentStepData.id)}
+                  disabled={stepPhotos.length === 0 || saving}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : currentStepData.status === 'completed' ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Etapa Concluída
+                    </>
+                  ) : (
+                    'Concluir Etapa'
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
