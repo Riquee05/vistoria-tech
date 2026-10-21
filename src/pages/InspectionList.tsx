@@ -13,6 +13,7 @@ import { ptBR } from 'date-fns/locale';
 export default function InspectionList() {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
+  const isDemoAccount = profile?.id === 'demo-admin-id-001';
   const [inspections, setInspections] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,10 +35,17 @@ export default function InspectionList() {
   const { data, isLoading: loading, error: queryError } = useQuery({
     queryKey: ['inspections', profile?.id],
     queryFn: fetchInspections,
-    enabled: Boolean(profile?.id),
+    enabled: Boolean(profile?.id) && !isDemoAccount,
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {
+    if (isDemoAccount) {
+      setInspections([]);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
     if (data !== undefined) {
       setInspections(data);
       setIsLoading(false);
@@ -46,7 +54,7 @@ export default function InspectionList() {
       setError(queryError.message);
       setIsLoading(false);
     }
-  }, [data, queryError]);
+  }, [data, queryError, isDemoAccount]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta vistoria?')) return;
@@ -93,6 +101,11 @@ export default function InspectionList() {
     <div className="min-h-screen bg-slate-50">
       <Header />
       <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
+        {isDemoAccount && (
+          <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Você está no modo demonstração. Para ver as vistorias compartilhadas, saia e entre com uma conta cadastrada.
+          </div>
+        )}
         <section className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-teal-800">
