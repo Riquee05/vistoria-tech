@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/Header';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { normalizeInspectionIdentifiers } from '@/lib/inspection-identifiers';
 
 export default function NewInspection() {
   const { profile } = useAuth();
@@ -30,12 +31,13 @@ export default function NewInspection() {
     }
 
     try {
+      const identifiers = normalizeInspectionIdentifiers(assetNumber, osNumber);
       const { data, error: insertError } = await supabase
         .from('inspections')
         .insert({
           profile_id: profile.id,
-          os_number: osNumber.trim() || null,
-          asset_number: assetNumber.trim(),
+          os_number: identifiers.osNumber,
+          asset_number: identifiers.assetNumber,
           status: 'in_progress',
         })
         .select()
@@ -49,7 +51,7 @@ export default function NewInspection() {
 
       toast({
         title: 'Vistoria criada!',
-        description: `Ativo: ${assetNumber.trim()}${osNumber.trim() ? ` - OS: ${osNumber.trim()}` : ''}`,
+        description: `Ativo: ${identifiers.assetNumber}${identifiers.osNumber ? ` - OS: ${identifiers.osNumber}` : ''}`,
       });
 
       navigate(`/vistoria/${data.id}`);

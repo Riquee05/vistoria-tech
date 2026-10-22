@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Check, Camera, AlertCircle, Loader2, ArrowLeft, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { normalizeInspectionIdentifiers } from '@/lib/inspection-identifiers';
 
 const STEPS = [
   { id: 'physical', name: 'Estado Físico', description: 'Fotos da carcaça, tela, teclado, portas e conectores' },
@@ -470,6 +471,8 @@ export default function InspectionDetail() {
     return <div className="min-h-screen flex items-center justify-center text-destructive">Vistoria não encontrada</div>;
   }
 
+  const identifiers = normalizeInspectionIdentifiers(inspection.asset_number, inspection.os_number);
+
   const canEditPhotos = profile?.id === inspection.profile_id;
   const renderStepPhotos = (stepId: string, allowEdit: boolean) => (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -513,13 +516,13 @@ export default function InspectionDetail() {
   if (inspection.status === 'completed') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <Header osNumber={inspection.os_number} assetNumber={inspection.asset_number} showOsAsset={true} />
+        <Header osNumber={identifiers.osNumber} assetNumber={identifiers.assetNumber} showOsAsset={true} />
         <div className="container mx-auto max-w-5xl px-4 py-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Vistoria concluída</h1>
               <p className="text-sm text-muted-foreground">
-                Relatório de Ativo {inspection.asset_number} · OS {inspection.os_number || 'não informada'}
+                Relatório de Ativo {identifiers.assetNumber} · OS {identifiers.osNumber || 'não informada'}
               </p>
             </div>
             <div className="flex gap-2">
@@ -570,8 +573,8 @@ export default function InspectionDetail() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <Header
-        osNumber={inspection.os_number}
-        assetNumber={inspection.asset_number}
+        osNumber={identifiers.osNumber}
+        assetNumber={identifiers.assetNumber}
         showOsAsset={true}
       />
 

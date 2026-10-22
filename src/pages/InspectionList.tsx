@@ -9,6 +9,7 @@ import { CalendarDays, CheckCircle2, ClipboardCheck, Clock3, Edit, Eye, Plus, Se
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { normalizeInspectionIdentifiers } from '@/lib/inspection-identifiers';
 
 export default function InspectionList() {
   const { profile } = useAuth();
@@ -73,8 +74,9 @@ export default function InspectionList() {
 
   const filteredInspections = inspections.filter(inspection => {
     const term = searchTerm.trim().toLocaleLowerCase('pt-BR');
-    const matchesSearch = !term || String(inspection.os_number ?? '').toLocaleLowerCase('pt-BR').includes(term)
-      || String(inspection.asset_number).toLocaleLowerCase('pt-BR').includes(term);
+    const identifiers = normalizeInspectionIdentifiers(inspection.asset_number, inspection.os_number);
+    const matchesSearch = !term || String(identifiers.osNumber ?? '').toLocaleLowerCase('pt-BR').includes(term)
+      || identifiers.assetNumber.toLocaleLowerCase('pt-BR').includes(term);
     const matchesStatus = statusFilter === 'all' || inspection.status === statusFilter;
     const createdAt = new Date(inspection.created_at);
     const cutoff = periodFilter === '7'
@@ -248,6 +250,7 @@ export default function InspectionList() {
         ) : (
           <div className="space-y-3">
             {filteredInspections.map(inspection => {
+              const identifiers = normalizeInspectionIdentifiers(inspection.asset_number, inspection.os_number);
               const completed = inspection.status === 'completed';
               const inProgress = inspection.status === 'in_progress';
               return (
@@ -262,11 +265,11 @@ export default function InspectionList() {
                           <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:flex sm:items-center sm:gap-8">
                             <div>
                               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ativo</p>
-                              <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{inspection.asset_number}</p>
+                              <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{identifiers.assetNumber}</p>
                             </div>
                             <div>
                               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ordem de serviço</p>
-                              <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{inspection.os_number || 'Não informada'}</p>
+                              <p className="mt-0.5 truncate text-lg font-bold text-slate-900">{identifiers.osNumber || 'Não informada'}</p>
                             </div>
                           </div>
                           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
