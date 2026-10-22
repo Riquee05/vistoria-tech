@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, Camera, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { Check, Camera, AlertCircle, Loader2, ArrowLeft, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const STEPS = [
@@ -31,6 +31,8 @@ export default function InspectionDetail() {
   const [photos, setPhotos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingPhotoId, setSavingPhotoId] = useState<string | null>(null);
+  const [editingPhotos, setEditingPhotos] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [reportHtml, setReportHtml] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
@@ -38,6 +40,7 @@ export default function InspectionDetail() {
   const [additionalSoftware, setAdditionalSoftware] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
   const reportFrame = useRef<HTMLIFrameElement>(null);
+  const replacePhotoInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -336,6 +339,84 @@ export default function InspectionDetail() {
     toast({ title: 'Foto enviada', description: `${fileName} adicionada à etapa ${step?.name}` });
   };
 
+  const handlePhotoReplacement = async (photo: any, file: File) => {
+    if (!id || profile?.id !== inspection?.profile_id) return;
+    setSavingPhotoId(photo.id);
+
+    let newFilePath: string | null = null;
+    let databaseUpdated = false;
+    try {
+      const compressed = await compressImage(file);
+      newFilePath = `${id}/${photo.step_id}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('inspection-photos')
+        .upload(newFilePath, compressed);
+      if (uploadError) throw uploadError;
+
+      const { data: signedPhoto, error: signedPhotoError } = await supabase.storage
+        .from('inspection-photos')
+        .createSignedUrl(newFilePath, 60 * 60 * 12);
+      if (signedPhotoError || !signedPhoto?.signedUrl) throw signedPhotoError || new Error('Não foi possível carregar a nova foto.');
+
+      const { error: updateError } = await supabase
+        .from('inspection_photos')
+        .update({
+          file_path: newFilePath,
+          file_size: compressed.size,
+          mime_type: compressed.type,
+        })
+        .eq('id', photo.id)
+        .eq('inspection_id', id);
+      if (updateError) throw updateError;
+      databaseUpdated = true;
+
+      const updatedPhoto = { ...photo, file_path: newFilePath, file_size: compressed.size, mime_type: compressed.type, signed_url: signedPhoto.signedUrl };
+      const updatedPhotos = photos.map(item => item.id === photo.id ? updatedPhoto : item);
+      setPhotos(updatedPhotos);
+
+      // Keep the already-synced Drive file in place, replacing its contents.
+      let driveSyncFailed = false;
+      try {
+        const { data: driveData, error: driveError } = await supabase.functions.invoke('sync-inspection-to-drive', {
+          body: photo.google_drive_file_id ? { inspectionId: id, photoId: photo.id } : { inspectionId: id },
+        });
+        const syncedCount = driveData?.syncedFiles ?? driveData?.uploadedFiles ?? 0;
+        driveSyncFailed = Boolean(driveError || syncedCount < 1);
+      } catch {
+        driveSyncFailed = true;
+      }
+
+      await supabase.storage.from('inspection-photos').remove([photo.file_path]);
+
+      if (inspection.status === 'completed') {
+        try {
+          const html = await buildInspectionReportHtml(inspection, steps, updatedPhotos, additionalSoftware);
+          setReportHtml(html);
+          setReportError(null);
+        } catch (error) {
+          setReportError(error instanceof Error ? error.message : 'Não foi possível atualizar o relatório.');
+        }
+      }
+
+      if (driveSyncFailed) {
+        toast({ title: 'Foto atualizada', description: 'A foto foi alterada na vistoria, mas a cópia do Google Drive não foi atualizada. Tente substituir novamente após atualizar a função do Drive.', variant: 'destructive' });
+      } else {
+        toast({ title: 'Foto substituída', description: 'A vistoria e o Google Drive foram atualizados.' });
+      }
+    } catch (error) {
+      if (newFilePath && !databaseUpdated) await supabase.storage.from('inspection-photos').remove([newFilePath]);
+      toast({
+        title: databaseUpdated ? 'Foto atualizada na vistoria' : 'Não foi possível substituir a foto',
+        description: databaseUpdated
+          ? 'Não foi possível confirmar a sincronização com o Google Drive. A imagem atualizada permanece salva na vistoria.'
+          : error instanceof Error ? error.message : 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingPhotoId(null);
+    }
+  };
+
   const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
@@ -374,6 +455,46 @@ export default function InspectionDetail() {
     return <div className="min-h-screen flex items-center justify-center text-destructive">Vistoria não encontrada</div>;
   }
 
+  const canEditPhotos = profile?.id === inspection.profile_id;
+  const renderStepPhotos = (stepId: string, allowEdit: boolean) => (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      {getStepPhotos(stepId).map((photo: any) => (
+        <div key={photo.id} className="relative aspect-square overflow-hidden rounded-lg border bg-white">
+          <img src={photo.signed_url} alt={photo.file_name} className="h-full w-full object-cover" />
+          {allowEdit && canEditPhotos && (
+            <>
+              <input
+                ref={element => { replacePhotoInputs.current[photo.id] = element; }}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                aria-label={`Escolher nova foto para ${photo.file_name}`}
+                disabled={savingPhotoId === photo.id}
+                onChange={event => {
+                  const file = event.target.files?.[0];
+                  if (file) void handlePhotoReplacement(photo, file);
+                  event.target.value = '';
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="absolute bottom-2 left-2 right-2 w-[calc(100%-1rem)] bg-white/95 shadow"
+                disabled={savingPhotoId === photo.id}
+                onClick={() => replacePhotoInputs.current[photo.id]?.click()}
+              >
+                {savingPhotoId === photo.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}
+                {savingPhotoId === photo.id ? 'Salvando…' : 'Trocar foto'}
+              </Button>
+            </>
+          )}
+        </div>
+      ))}
+      {getStepPhotos(stepId).length === 0 && <p className="col-span-full text-sm text-muted-foreground">Nenhuma foto nesta etapa.</p>}
+    </div>
+  );
+
   if (inspection.status === 'completed') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -388,9 +509,26 @@ export default function InspectionDetail() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
+              {canEditPhotos && <Button variant="outline" onClick={() => setEditingPhotos(value => !value)}>{editingPhotos ? 'Concluir edição' : 'Editar fotos'}</Button>}
               {reportHtml && <Button onClick={() => reportFrame.current?.contentWindow?.print()}>Salvar / imprimir PDF</Button>}
             </div>
           </div>
+          {editingPhotos && canEditPhotos && (
+            <Card className="mb-5">
+              <CardHeader>
+                <CardTitle className="text-lg">Editar fotos da vistoria</CardTitle>
+                <CardDescription>Escolha “Trocar foto” para corrigir uma imagem. O relatório será atualizado automaticamente.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {STEPS.map(step => (
+                  <section key={step.id} className="space-y-2">
+                    <h2 className="font-semibold">{step.name}</h2>
+                    {renderStepPhotos(step.id, true)}
+                  </section>
+                ))}
+              </CardContent>
+            </Card>
+          )}
           {reportLoading ? (
             <Card><CardContent className="flex items-center justify-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" /> Preparando relatório e fotos…</CardContent></Card>
           ) : reportError ? (
@@ -474,16 +612,8 @@ export default function InspectionDetail() {
               {/* Photo Upload */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Fotos da etapa</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {stepPhotos.map((photo: any) => (
-                    <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden border">
-                      <img
-                        src={photo.signed_url}
-                        alt={photo.file_name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  {renderStepPhotos(currentStepData.id, true)}
                   <label className="relative aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 cursor-pointer hover:border-primary/50 transition-colors flex items-center justify-center">
                     <input
                       type="file"

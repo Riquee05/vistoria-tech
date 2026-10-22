@@ -1,6 +1,6 @@
 # Envio de vistorias para o Google Drive
 
-Ao enviar fotos ou concluir uma vistoria, a função cria uma pasta `Ativo NÚMERO - OS NÚMERO` (ou `Ativo NÚMERO - Sem OS`) dentro da pasta configurada e copia as fotos ainda não sincronizadas.
+Ao enviar fotos ou concluir uma vistoria, a função cria uma pasta `Ativo NÚMERO - OS NÚMERO` (ou `Ativo NÚMERO - Sem OS`) dentro da pasta configurada e copia as fotos ainda não sincronizadas. Ao substituir uma foto já sincronizada, a função atualiza o arquivo existente no Drive.
 
 ## Configuração
 

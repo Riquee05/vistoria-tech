@@ -68,6 +68,20 @@ const uploadDriveFile = async (accessToken: string, folderId: string, name: stri
   return (await response.json()).id as string;
 };
 
+const replaceDriveFile = async (accessToken: string, fileId: string, file: Blob) => {
+  const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(fileId)}?uploadType=media`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': file.type || 'application/octet-stream',
+    },
+    body: file,
+  });
+
+  if (!response.ok) throw new Error(`Could not replace Google Drive photo: ${await response.text()}`);
+  return fileId;
+};
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -90,7 +104,7 @@ Deno.serve(async (request) => {
     const { data: authData, error: authError } = await admin.auth.getUser(token);
     if (authError || !authData.user) return json({ error: 'Unauthorized' }, 401);
 
-    const { inspectionId } = await request.json();
+    const { inspectionId, photoId } = await request.json();
     if (!inspectionId) return json({ error: 'inspectionId is required' }, 400);
 
     const { data: inspection, error: inspectionError } = await admin
@@ -101,11 +115,14 @@ Deno.serve(async (request) => {
       .single();
     if (inspectionError || !inspection) return json({ error: 'Inspection not found' }, 404);
 
-    const { data: photos, error: photosError } = await admin
+    let photosQuery = admin
       .from('inspection_photos')
       .select('id, file_path, file_name, google_drive_file_id, google_drive_folder_id')
       .eq('inspection_id', inspectionId);
+    if (photoId) photosQuery = photosQuery.eq('id', photoId);
+    const { data: photos, error: photosError } = await photosQuery;
     if (photosError) throw photosError;
+    if (photoId && !photos?.length) return json({ error: 'Photo not found' }, 404);
 
     const accessToken = await getGoogleAccessToken(googleClientId, googleClientSecret, googleRefreshToken);
     const existingFolderId = photos?.find((photo) => photo.google_drive_folder_id)?.google_drive_folder_id;
@@ -115,17 +132,19 @@ Deno.serve(async (request) => {
       : 'Sem OS';
     const folderName = `Ativo ${safeFolderName(inspection.asset_number)} - ${osLabel}`;
     const folderId = existingFolderId || await createDriveFolder(accessToken, folderName, parentFolderId);
-    let uploadedFiles = 0;
+    let syncedFiles = 0;
 
     for (const photo of photos || []) {
-      if (photo.google_drive_file_id) continue;
+      if (photo.google_drive_file_id && !photoId) continue;
 
       const { data: file, error: downloadError } = await admin.storage
         .from('inspection-photos')
         .download(photo.file_path);
       if (downloadError || !file) throw downloadError || new Error('Photo download failed');
 
-      const driveFileId = await uploadDriveFile(accessToken, folderId, photo.file_name, file);
+      const driveFileId = photo.google_drive_file_id
+        ? await replaceDriveFile(accessToken, photo.google_drive_file_id, file)
+        : await uploadDriveFile(accessToken, folderId, photo.file_name, file);
       const { error: updateError } = await admin
         .from('inspection_photos')
         .update({
@@ -135,13 +154,14 @@ Deno.serve(async (request) => {
         })
         .eq('id', photo.id);
       if (updateError) throw updateError;
-      uploadedFiles += 1;
+      syncedFiles += 1;
     }
 
     return json({
       folderId,
       folderUrl: `https://drive.google.com/drive/folders/${folderId}`,
-      uploadedFiles,
+      uploadedFiles: syncedFiles,
+      syncedFiles,
     });
   } catch (error) {
     console.error(error);
