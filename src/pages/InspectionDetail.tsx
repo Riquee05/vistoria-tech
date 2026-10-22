@@ -20,6 +20,19 @@ const STEPS = [
   { id: 'pre-packaging', name: 'Pré-Embalagem', description: 'Foto final do equipamento antes de embalar' },
 ];
 
+const getErrorMessage = async (error: any) => {
+  const response = error?.context;
+  if (response && typeof response.clone === 'function') {
+    try {
+      const body = await response.clone().json();
+      if (typeof body?.error === 'string') return body.error;
+    } catch {
+      // Fall back to the SDK message when the response has no JSON body.
+    }
+  }
+  return error instanceof Error ? error.message : 'Erro inesperado ao enviar as fotos.';
+};
+
 export default function InspectionDetail() {
   const { id } = useParams<{ id: string }>();
   const { profile } = useAuth();
@@ -217,11 +230,12 @@ export default function InspectionDetail() {
       toast({ title: 'Vistoria finalizada!', description: 'As fotos foram enviadas ao Google Drive com sucesso.' });
       navigate('/');
     } catch (err) {
+      const errorMessage = await getErrorMessage(err);
       toast({
         title: inspectionCompleted ? 'Vistoria concluída, mas o envio falhou' : 'Erro',
         description: inspectionCompleted
-          ? 'As fotos não foram enviadas ao Google Drive. A vistoria está salva; tente finalizar novamente.'
-          : 'Não foi possível finalizar a vistoria',
+          ? `A vistoria está salva, mas o Google Drive recusou o envio: ${errorMessage}`
+          : `Não foi possível finalizar a vistoria: ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {
@@ -329,9 +343,10 @@ export default function InspectionDetail() {
     });
 
     if (driveError) {
+      const driveMessage = await getErrorMessage(driveError);
       toast({
         title: 'Foto enviada, sincronização pendente',
-        description: 'A foto foi salva na vistoria. O envio ao Google Drive será tentado novamente ao concluir a vistoria.',
+        description: `A foto foi salva na vistoria, mas o Google Drive recusou o envio: ${driveMessage}`,
         variant: 'destructive',
       });
     }
