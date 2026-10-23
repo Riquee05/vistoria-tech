@@ -62,6 +62,7 @@ export default function InspectionDetail() {
   const [softwareDraft, setSoftwareDraft] = useState('');
   const [softwareDialogOpen, setSoftwareDialogOpen] = useState(false);
   const [savingSoftware, setSavingSoftware] = useState(false);
+  const [driveSyncing, setDriveSyncing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const reportFrame = useRef<HTMLIFrameElement>(null);
   const replacePhotoInputs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -244,6 +245,31 @@ export default function InspectionDetail() {
       });
     } finally {
       setSavingSoftware(false);
+    }
+  };
+  const handleSyncDrive = async () => {
+    setDriveSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-inspection-to-drive', {
+        body: { inspectionId: id },
+      });
+      if (error) throw error;
+
+      const syncedFiles = Number(data?.syncedFiles ?? data?.uploadedFiles ?? 0);
+      toast({
+        title: 'Sincronização concluída',
+        description: syncedFiles > 0
+          ? syncedFiles + ' foto(s) enviada(s) ao Google Drive.'
+          : 'As fotos já estavam sincronizadas com o Google Drive.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Não foi possível enviar ao Google Drive',
+        description: await getErrorMessage(error),
+        variant: 'destructive',
+      });
+    } finally {
+      setDriveSyncing(false);
     }
   };
   const handleFinish = async () => {
@@ -583,6 +609,10 @@ export default function InspectionDetail() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
+              <Button variant="outline" onClick={handleSyncDrive} disabled={driveSyncing}>
+                {driveSyncing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {driveSyncing ? 'Enviando fotos…' : 'Tentar envio ao Drive'}
+              </Button>
               {canEditPhotos && <Button variant="outline" onClick={() => setEditingPhotos(value => !value)}>{editingPhotos ? 'Concluir edição' : 'Editar fotos'}</Button>}
               {reportHtml && <Button onClick={() => reportFrame.current?.contentWindow?.print()}>Salvar / imprimir PDF</Button>}
             </div>

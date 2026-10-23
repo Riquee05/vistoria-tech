@@ -111,7 +111,6 @@ Deno.serve(async (request) => {
       .from('inspections')
       .select('id, asset_number, os_number')
       .eq('id', inspectionId)
-      .eq('profile_id', authData.user.id)
       .single();
     if (inspectionError || !inspection) return json({ error: 'Inspection not found' }, 404);
 

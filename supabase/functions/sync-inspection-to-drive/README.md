@@ -17,4 +17,4 @@ Ao enviar fotos ou concluir uma vistoria, a função cria uma pasta `Ativo NÚME
 
 4. Publique a Edge Function `sync-inspection-to-drive`.
 
-A função valida a sessão e só sincroniza vistorias pertencentes ao usuário autenticado. Os IDs de arquivo já sincronizados são reaproveitados para evitar duplicar fotos em novas tentativas.
+A função valida a sessão e permite que qualquer usuário autenticado sincronize as vistorias compartilhadas da equipe. Os IDs de arquivo já sincronizados são reaproveitados para evitar duplicar fotos em novas tentativas.
