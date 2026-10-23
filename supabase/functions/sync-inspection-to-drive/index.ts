@@ -53,7 +53,7 @@ const uploadDriveFile = async (accessToken: string, folderId: string, name: stri
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n`,
     `--${boundary}\r\nContent-Type: ${file.type || 'application/octet-stream'}\r\n\r\n`,
     file,
-    `\r\n--${boundary}--`,
+    `\r\n--${boundary}--\r\n`,
   ]);
   const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
     method: 'POST',
