@@ -47,21 +47,31 @@ const createDriveFolder = async (accessToken: string, name: string, parentId?: s
 };
 
 const uploadDriveFile = async (accessToken: string, folderId: string, name: string, file: Blob) => {
-  const boundary = `drive-upload-${crypto.randomUUID()}`;
-  const metadata = JSON.stringify({ name, parents: [folderId] });
-  const body = new Blob([
-    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n`,
-    `--${boundary}\r\nContent-Type: ${file.type || 'application/octet-stream'}\r\n\r\n`,
-    file,
-    `\r\n--${boundary}--\r\n`,
-  ]);
-  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+  const mimeType = file.type || 'application/octet-stream';
+  const sessionResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': `multipart/related; boundary=${boundary}`,
+      'Content-Type': 'application/json; charset=UTF-8',
+      'X-Upload-Content-Type': mimeType,
+      'X-Upload-Content-Length': String(file.size),
     },
-    body,
+    body: JSON.stringify({ name, parents: [folderId], mimeType }),
+  });
+
+  if (!sessionResponse.ok) {
+    throw new Error(`Could not start Google Drive photo upload: ${await sessionResponse.text()}`);
+  }
+  const uploadUrl = sessionResponse.headers.get('Location');
+  if (!uploadUrl) throw new Error('Google Drive did not return an upload session URL');
+
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': mimeType,
+    },
+    body: file,
   });
 
   if (!response.ok) throw new Error(`Could not upload photo to Google Drive: ${await response.text()}`);
