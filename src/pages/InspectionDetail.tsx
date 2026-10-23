@@ -607,14 +607,14 @@ export default function InspectionDetail() {
                 Relatório de Ativo {identifiers.assetNumber} · OS {identifiers.osNumber || 'não informada'}
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate('/')}>Voltar</Button>
-              <Button variant="outline" onClick={handleSyncDrive} disabled={driveSyncing}>
+            <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+              <Button className="h-auto min-h-10 min-w-0 whitespace-normal px-2 py-2 text-center leading-tight sm:px-4" variant="outline" onClick={() => navigate('/')}>Voltar</Button>
+              <Button className="h-auto min-h-10 min-w-0 whitespace-normal px-2 py-2 text-center leading-tight sm:px-4" variant="outline" onClick={handleSyncDrive} disabled={driveSyncing}>
                 {driveSyncing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {driveSyncing ? 'Enviando fotos…' : 'Tentar envio ao Drive'}
               </Button>
-              {canEditPhotos && <Button variant="outline" onClick={() => setEditingPhotos(value => !value)}>{editingPhotos ? 'Concluir edição' : 'Editar fotos'}</Button>}
-              {reportHtml && <Button onClick={() => reportFrame.current?.contentWindow?.print()}>Salvar / imprimir PDF</Button>}
+              {canEditPhotos && <Button className="h-auto min-h-10 min-w-0 whitespace-normal px-2 py-2 text-center leading-tight sm:px-4" variant="outline" onClick={() => setEditingPhotos(value => !value)}>{editingPhotos ? 'Concluir edição' : 'Editar fotos'}</Button>}
+              {reportHtml && <Button className="h-auto min-h-10 min-w-0 whitespace-normal px-2 py-2 text-center leading-tight sm:px-4" onClick={() => reportFrame.current?.contentWindow?.print()}>Salvar / imprimir PDF</Button>}
             </div>
           </div>
           {editingPhotos && canEditPhotos && (
