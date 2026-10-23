@@ -6,19 +6,26 @@ import { buildInspectionReportHtml, openInspectionReport } from '@/lib/inspectio
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Check, Camera, AlertCircle, Loader2, ArrowLeft, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeInspectionIdentifiers } from '@/lib/inspection-identifiers';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const STEPS = [
-  { id: 'physical', name: 'Estado Físico', description: 'Fotos da carcaça, tela, teclado, portas e conectores' },
   { id: 'diagnosis', name: 'Diagnóstico', description: 'Fotos de testes, erros, telas de diagnóstico' },
   { id: 'os', name: 'Sistema Operacional', description: 'Fotos da tela de boot, versão do SO, licenças' },
   { id: 'config', name: 'Configuração', description: 'Fotos de BIOS, specs, configurações de hardware' },
-  { id: 'pre-packaging', name: 'Pré-Embalagem', description: 'Foto final do equipamento antes de embalar' },
+  { id: 'physical', name: 'Estado Físico', description: 'Fotos da carcaça, tela, teclado, portas e conectores' },
+  { id: 'pre-packaging', name: 'Foto Antes da Embalagem', description: 'Foto final do equipamento antes de embalar' },
 ];
 
 const getErrorMessage = async (error: any) => {
@@ -52,6 +59,9 @@ export default function InspectionDetail() {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [additionalSoftware, setAdditionalSoftware] = useState('');
+  const [softwareDraft, setSoftwareDraft] = useState('');
+  const [softwareDialogOpen, setSoftwareDialogOpen] = useState(false);
+  const [savingSoftware, setSavingSoftware] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const reportFrame = useRef<HTMLIFrameElement>(null);
   const replacePhotoInputs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -95,6 +105,7 @@ export default function InspectionDetail() {
       setSteps(mergedSteps);
       const software = mergedSteps.find(step => step.id === 'config')?.additional_software || '';
       setAdditionalSoftware(software);
+      setSoftwareDraft(software);
 
       const { data: photosData, error: photosError } = await supabase
         .from('inspection_photos')
@@ -190,6 +201,51 @@ export default function InspectionDetail() {
     }
   };
 
+  const handleSaveAdditionalSoftware = async () => {
+    setSavingSoftware(true);
+    try {
+      const software = softwareDraft.trim();
+      const { data: existingStep, error: findError } = await supabase
+        .from('inspection_steps')
+        .select('id')
+        .eq('inspection_id', id)
+        .eq('step_id', 'config')
+        .maybeSingle();
+      if (findError) throw findError;
+
+      const { error } = existingStep
+        ? await supabase
+            .from('inspection_steps')
+            .update({ additional_software: software || null })
+            .eq('inspection_id', id)
+            .eq('step_id', 'config')
+        : await supabase
+            .from('inspection_steps')
+            .insert({
+              inspection_id: id,
+              step_id: 'config',
+              step_name: 'Configuração',
+              additional_software: software || null,
+            });
+      if (error) throw error;
+
+      setAdditionalSoftware(software);
+      setSoftwareDraft(software);
+      setSoftwareDialogOpen(false);
+      toast({
+        title: 'Informação salva',
+        description: software ? 'Software adicional registrado.' : 'Nenhum software adicional informado.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Não foi possível salvar',
+        description: error instanceof Error ? error.message : 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingSoftware(false);
+    }
+  };
   const handleFinish = async () => {
     const allCompleted = steps.every(s => s.status === 'completed');
     if (!allCompleted) {
@@ -579,7 +635,10 @@ export default function InspectionDetail() {
       />
 
       <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <div className="flex justify-end mb-6">
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={() => { setSoftwareDraft(additionalSoftware); setSoftwareDialogOpen(true); }} disabled={saving}>
+            Software adicional <span className="ml-1 text-muted-foreground">(opcional)</span>
+          </Button>
           <Button variant="outline" disabled={generatingPdf || saving} onClick={async () => {
             setGeneratingPdf(true);
             try {
@@ -612,11 +671,14 @@ export default function InspectionDetail() {
               </div>
             ))}
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground mt-2">
+          <div className="mt-2 hidden justify-between text-xs text-muted-foreground sm:flex">
             {STEPS.map(step => (
               <span key={step.id} className="w-20 text-center">{step.name}</span>
             ))}
           </div>
+          <p className="mt-2 text-center text-sm font-medium text-muted-foreground sm:hidden">
+            Etapa {currentStep + 1} de {steps.length}: {currentStepData?.name}
+          </p>
         </div>
 
         {/* Current Step */}
@@ -652,19 +714,6 @@ export default function InspectionDetail() {
                 )}
               </div>
 
-              {/* Additional Software field for config step */}
-              {currentStepData.id === 'config' && (
-                <div className="space-y-2">
-                  <Label htmlFor="additionalSoftware">Software Adicional</Label>
-                  <Textarea
-                    id="additionalSoftware"
-                    placeholder="Descreva o software adicional que será instalado no equipamento..."
-                    value={additionalSoftware}
-                    onChange={(e) => setAdditionalSoftware(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-              )}
 
               {/* Complete Step Button */}
               <div className="flex flex-col-reverse gap-3 sm:flex-row">
@@ -716,6 +765,35 @@ export default function InspectionDetail() {
           </Button>
         )}
       </div>
+      <Dialog open={softwareDialogOpen} onOpenChange={open => !savingSoftware && setSoftwareDialogOpen(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Software adicional</DialogTitle>
+            <DialogDescription>
+              Informe se algum software deve ser instalado. Este campo é opcional e não impede a vistoria.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="additionalSoftware">Software a instalar</Label>
+            <Textarea
+              id="additionalSoftware"
+              placeholder="Ex.: Microsoft Office, Adobe Reader…"
+              value={softwareDraft}
+              onChange={event => setSoftwareDraft(event.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter className="flex-col-reverse sm:flex-row">
+            <Button type="button" variant="outline" onClick={() => setSoftwareDialogOpen(false)} disabled={savingSoftware}>
+              Pular
+            </Button>
+            <Button type="button" onClick={handleSaveAdditionalSoftware} disabled={savingSoftware}>
+              {savingSoftware ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {savingSoftware ? 'Salvando…' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
