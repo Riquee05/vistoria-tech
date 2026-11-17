@@ -4,9 +4,9 @@ export interface InspectionIdentifiers {
 }
 
 /**
- * Older records may have the asset and work order stored in the opposite
- * columns. Work orders are larger than asset numbers in this system, so use
- * that rule to normalize numeric pairs and numeric/non-numeric reversals.
+ * Older records with numeric identifiers may have the asset and work order
+ * stored in the opposite columns. Never infer a swap from letters in the OS:
+ * work orders and service calls can contain both letters and numbers.
  */
 export function normalizeInspectionIdentifiers(
   assetNumber: string | null | undefined,
@@ -19,10 +19,6 @@ export function normalizeInspectionIdentifiers(
 
   const assetIsNumeric = /^\d+$/.test(asset);
   const osIsNumeric = /^\d+$/.test(os);
-
-  if (assetIsNumeric && !osIsNumeric) {
-    return { assetNumber: os, osNumber: asset };
-  }
 
   if (assetIsNumeric && osIsNumeric && Number(os) <= Number(asset)) {
     return { assetNumber: os, osNumber: asset };
