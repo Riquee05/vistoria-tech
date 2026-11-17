@@ -7,12 +7,14 @@ import { Header } from '@/components/layout/Header';
 import { Input } from '@/components/ui/input';
 import { CalendarDays, CheckCircle2, ClipboardCheck, Clock3, Edit, Eye, Plus, Search, Trash2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { normalizeInspectionIdentifiers } from '@/lib/inspection-identifiers';
 
 export default function InspectionList() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isDemoAccount = profile?.id === 'demo-admin-id-001';
   const [inspections, setInspections] = useState<any[]>([]);
@@ -22,6 +24,8 @@ export default function InspectionList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const fetchInspections = async () => {
     const { data, error } = await supabase
@@ -70,7 +74,7 @@ export default function InspectionList() {
 
   const completedCount = inspections.filter(inspection => inspection.status === 'completed').length;
   const inProgressCount = inspections.filter(inspection => inspection.status === 'in_progress').length;
-  const hasActiveFilters = Boolean(searchTerm || statusFilter !== 'all' || periodFilter !== 'all');
+  const hasActiveFilters = Boolean(searchTerm || statusFilter !== 'all' || periodFilter !== 'all' || dateFrom || dateTo);
 
   const filteredInspections = inspections.filter(inspection => {
     const term = searchTerm.trim().toLocaleLowerCase('pt-BR');
@@ -88,7 +92,11 @@ export default function InspectionList() {
           : periodFilter === 'year'
             ? new Date(new Date().getFullYear(), 0, 1)
             : null;
-    return matchesSearch && matchesStatus && (!cutoff || createdAt >= cutoff);
+    const from = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
+    const to = dateTo ? new Date(`${dateTo}T23:59:59.999`) : null;
+    const matchesPeriod = !cutoff || createdAt >= cutoff;
+    const matchesDateRange = (!from || createdAt >= from) && (!to || createdAt <= to);
+    return matchesSearch && matchesStatus && matchesPeriod && matchesDateRange;
   });
 
   if (isLoading) {
@@ -102,55 +110,57 @@ export default function InspectionList() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Header />
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
+      <main className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 lg:py-9">
         {isDemoAccount && (
           <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             Você está no modo demonstração. Para ver as vistorias compartilhadas, saia e entre com uma conta cadastrada.
           </div>
         )}
-        <section className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-800">
-              <ClipboardCheck className="h-4 w-4" /> Gestão de inspeções
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Histórico de vistorias</h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Consulte as vistorias da equipe e encontre rapidamente uma OS ou um ativo.
+        <section className="mb-7 flex flex-col gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="border-l-[3px] border-violet-600 pl-4">
+            <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-violet-700">WeBancada · Operações</p>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-[2rem]">Painel de vistorias</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
+              Acompanhe a equipe, encontre um ativo ou consulte uma ordem de serviço.
             </p>
           </div>
-          <Button className="h-11 rounded-xl px-5 shadow-sm" onClick={() => window.location.href = '/nova-vistoria'}>
+          <Button className="h-11 rounded-lg bg-slate-950 px-5 shadow-sm hover:bg-violet-800" onClick={() => navigate('/nova-vistoria')}>
             <Plus className="mr-2 h-4 w-4" /> Nova vistoria
           </Button>
         </section>
 
         <section className="mb-6 grid gap-3 sm:grid-cols-3" aria-label="Resumo das vistorias">
-          <Card className="rounded-2xl border-slate-200 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600"><ClipboardCheck className="h-5 w-5" /></div>
-              <div><p className="text-sm text-slate-500">Total de vistorias</p><p className="text-2xl font-bold text-slate-900">{inspections.length}</p></div>
+          <Card className="rounded-xl border-slate-200 border-t-[3px] border-t-slate-900 shadow-sm">
+            <CardContent className="flex items-center justify-between gap-4 p-4">
+              <div><p className="text-sm font-medium text-slate-600">Total de vistorias</p><p className="mt-1 text-3xl font-bold tabular-nums text-slate-950">{inspections.length}</p></div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700"><ClipboardCheck className="h-5 w-5" /></div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border-amber-100 bg-amber-50/60 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><Clock3 className="h-5 w-5" /></div>
-              <div><p className="text-sm text-amber-800">Em andamento</p><p className="text-2xl font-bold text-amber-900">{inProgressCount}</p></div>
+          <Card className="rounded-xl border-slate-200 border-t-[3px] border-t-amber-500 shadow-sm">
+            <CardContent className="flex items-center justify-between gap-4 p-4">
+              <div><p className="text-sm font-medium text-slate-600">Em andamento</p><p className="mt-1 text-3xl font-bold tabular-nums text-slate-950">{inProgressCount}</p></div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-700"><Clock3 className="h-5 w-5" /></div>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border-emerald-100 bg-emerald-50/60 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><CheckCircle2 className="h-5 w-5" /></div>
-              <div><p className="text-sm text-emerald-800">Concluídas</p><p className="text-2xl font-bold text-emerald-900">{completedCount}</p></div>
+          <Card className="rounded-xl border-slate-200 border-t-[3px] border-t-emerald-600 shadow-sm">
+            <CardContent className="flex items-center justify-between gap-4 p-4">
+              <div><p className="text-sm font-medium text-slate-600">Concluídas</p><p className="mt-1 text-3xl font-bold tabular-nums text-slate-950">{completedCount}</p></div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700"><CheckCircle2 className="h-5 w-5" /></div>
             </CardContent>
           </Card>
         </section>
 
-        <Card className="mb-6 rounded-2xl border-slate-200 shadow-sm">
+        <Card className="mb-6 rounded-xl border-slate-200 shadow-sm">
           <CardContent className="p-4 sm:p-5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-slate-900">Buscar e filtrar</h2>
+              {hasActiveFilters && <span className="text-xs font-medium text-violet-700">Filtros ativos</span>}
+            </div>
             <form
               className="flex flex-col gap-3 sm:flex-row"
               onSubmit={event => { event.preventDefault(); setSearchTerm(searchInput); }}
             >
-              <div className="relative flex-1">
+              <div className="relative min-w-0 flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   value={searchInput}
@@ -174,7 +184,7 @@ export default function InspectionList() {
                 <Search className="mr-2 h-4 w-4" /> Pesquisar
               </Button>
             </form>
-            <div className="mt-3 grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2">
+            <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 lg:grid-cols-4">
               <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-500">
                 Situação
                 <select
@@ -190,12 +200,12 @@ export default function InspectionList() {
                 </select>
               </label>
               <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-500">
-                Período de criação
+                Atalho de período
                 <select
                   value={periodFilter}
                   onChange={event => setPeriodFilter(event.target.value)}
                   className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Filtrar por período"
+                  aria-label="Filtrar por período rápido"
                 >
                   <option value="all">Qualquer período</option>
                   <option value="7">Últimos 7 dias</option>
@@ -203,6 +213,28 @@ export default function InspectionList() {
                   <option value="90">Últimos 90 dias</option>
                   <option value="year">Este ano</option>
                 </select>
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-500">
+                A partir de
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={event => setDateFrom(event.target.value)}
+                  className="h-10 rounded-lg border-slate-200 bg-white text-sm text-slate-800"
+                  aria-label="Filtrar a partir desta data"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs font-medium text-slate-500">
+                Até
+                <Input
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={event => setDateTo(event.target.value)}
+                  className="h-10 rounded-lg border-slate-200 bg-white text-sm text-slate-800"
+                  aria-label="Filtrar até esta data"
+                />
               </label>
             </div>
           </CardContent>
@@ -218,7 +250,7 @@ export default function InspectionList() {
               <button
                 type="button"
                 className="text-sm font-medium text-violet-700 hover:text-violet-900"
-                onClick={() => { setSearchInput(''); setSearchTerm(''); setStatusFilter('all'); setPeriodFilter('all'); }}
+                onClick={() => { setSearchInput(''); setSearchTerm(''); setStatusFilter('all'); setPeriodFilter('all'); setDateFrom(''); setDateTo(''); }}
               >
                 Limpar filtros
               </button>
@@ -241,7 +273,7 @@ export default function InspectionList() {
                   : 'Tente mudar a situação, o período ou pesquisar por outro número de OS ou ativo.'}
               </p>
               {inspections.length === 0 && (
-                <Button className="mt-5 rounded-xl" onClick={() => window.location.href = '/nova-vistoria'}>
+                <Button className="mt-5 rounded-lg" onClick={() => navigate('/nova-vistoria')}>
                   <Plus className="mr-2 h-4 w-4" /> Criar vistoria
                 </Button>
               )}
@@ -254,7 +286,7 @@ export default function InspectionList() {
               const completed = inspection.status === 'completed';
               const inProgress = inspection.status === 'in_progress';
               return (
-                <Card key={inspection.id} className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+                <Card key={inspection.id} className="overflow-hidden rounded-xl border-slate-200 bg-white shadow-sm transition-shadow hover:border-violet-200 hover:shadow-md">
                   <CardContent className="p-4 sm:p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-start gap-4">
@@ -292,7 +324,7 @@ export default function InspectionList() {
                           variant="outline"
                           size="sm"
                           className="h-9 flex-1 rounded-lg border-slate-200 sm:flex-none"
-                          onClick={() => window.location.href = `/vistoria/${inspection.id}`}
+                          onClick={() => navigate(`/vistoria/${inspection.id}`)}
                         >
                           <Eye className="mr-2 h-4 w-4" /> Visualizar
                         </Button>
@@ -302,7 +334,7 @@ export default function InspectionList() {
                               variant="ghost"
                               size="icon"
                               className="h-9 w-9 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                              onClick={() => window.location.href = `/editar-vistoria/${inspection.id}`}
+                              onClick={() => navigate(`/editar-vistoria/${inspection.id}`)}
                               title="Editar vistoria"
                               aria-label="Editar vistoria"
                             >
