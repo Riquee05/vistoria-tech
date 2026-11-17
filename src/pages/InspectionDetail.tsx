@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { buildInspectionReportHtml, openInspectionReport } from '@/lib/inspection-report';
@@ -43,6 +43,7 @@ const getErrorMessage = async (error: any) => {
 
 export default function InspectionDetail() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -55,7 +56,7 @@ export default function InspectionDetail() {
   const [savingPhotoId, setSavingPhotoId] = useState<string | null>(null);
   const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null);
   const [photoToDelete, setPhotoToDelete] = useState<any>(null);
-  const [editingPhotos, setEditingPhotos] = useState(false);
+  const [editingPhotos, setEditingPhotos] = useState(() => location.pathname.startsWith('/editar-vistoria/'));
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [reportHtml, setReportHtml] = useState('');
   const [reportLoading, setReportLoading] = useState(false);

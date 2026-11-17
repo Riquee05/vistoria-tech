@@ -93,6 +93,14 @@ const AppRoutes = () => (
         </ProtectedRoute>
       }
     />
+    <Route
+      path="/editar-vistoria/:id"
+      element={
+        <ProtectedRoute>
+          <InspectionDetail />
+        </ProtectedRoute>
+      }
+    />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
