@@ -38,6 +38,9 @@ const getErrorMessage = async (error: any) => {
       // Fall back to the SDK message when the response has no JSON body.
     }
   }
+  if (error && typeof error === 'object' && typeof error.message === 'string') {
+    return error.message;
+  }
   return error instanceof Error ? error.message : 'Erro inesperado ao enviar as fotos.';
 };
 
@@ -214,6 +217,7 @@ export default function InspectionDetail() {
         .select('id')
         .eq('inspection_id', id)
         .eq('step_id', 'config')
+        .limit(1)
         .maybeSingle();
       if (findError) throw findError;
 
@@ -243,7 +247,9 @@ export default function InspectionDetail() {
     } catch (error) {
       toast({
         title: 'Não foi possível salvar',
-        description: error instanceof Error ? error.message : 'Tente novamente.',
+        description: error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
+          ? error.message
+          : 'Confira a conexão e tente novamente.',
         variant: 'destructive',
       });
     } finally {
@@ -747,9 +753,13 @@ export default function InspectionDetail() {
 
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button variant="outline" onClick={() => { setSoftwareDraft(additionalSoftware); setSoftwareDialogOpen(true); }} disabled={saving}>
-            Software adicional <span className="ml-1 text-muted-foreground">(opcional)</span>
-          </Button>
+          {canEditPhotos ? (
+            <Button variant="outline" onClick={() => { setSoftwareDraft(additionalSoftware); setSoftwareDialogOpen(true); }} disabled={saving}>
+              Software adicional <span className="ml-1 text-muted-foreground">(opcional)</span>
+            </Button>
+          ) : (
+            <p className="self-center text-sm text-muted-foreground">Somente quem iniciou a vistoria pode informar o software adicional.</p>
+          )}
           <Button variant="outline" disabled={generatingPdf || saving} onClick={async () => {
             setGeneratingPdf(true);
             try {
