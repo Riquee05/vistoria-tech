@@ -95,21 +95,24 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <img src="/icons/webancada-mark.svg" alt="" className="h-9 w-9 rounded-lg" />
-          <span className="hidden font-semibold sm:inline-block">WeBancada</span>
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/85">
+      <div className="container flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <img src="/icons/webancada-mark.svg" alt="" className="h-10 w-10 rounded-xl shadow-sm" />
+          <div className="hidden sm:block">
+            <span className="block text-sm font-bold tracking-tight text-slate-950">WeBancada</span>
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">Gestão de inspeções</span>
+          </div>
         </div>
 
         {/* OS e Ativo fixos no topo */}
         {showOsAsset && assetNumber && (
-          <div className="hidden md:flex items-center gap-2 text-sm">
-            <span className="rounded-md bg-muted px-2 py-1">
-              Ativo: <span className="font-medium">{assetNumber}</span>
+          <div className="hidden items-center gap-2 text-xs md:flex">
+            <span className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-slate-600">
+              Ativo <span className="ml-1 font-semibold text-violet-900">{assetNumber}</span>
             </span>
-            <span className="rounded-md bg-muted px-2 py-1">
-              OS: <span className="font-medium">{osNumber || 'Não informada'}</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600">
+              OS <span className="ml-1 font-semibold text-slate-900">{osNumber || 'Não informada'}</span>
             </span>
           </div>
         )}
@@ -118,14 +121,14 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
           <Button
             variant="outline"
             size="sm"
-            className="hidden md:inline-flex"
+            className="hidden h-10 rounded-xl border-violet-200 text-violet-800 transition hover:border-violet-300 hover:bg-violet-50 md:inline-flex"
             onClick={openInstallHelp}
           >
             <Smartphone className="h-4 w-4" />
             Instalar no celular
           </Button>
           {profile && (
-            <div className="hidden sm:flex items-center gap-2 text-sm">
+            <div className="hidden items-center gap-2 rounded-full bg-slate-50 px-3 py-2 text-sm sm:flex">
               <User className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">{profile.full_name || profile.email}</span>
             </div>
@@ -134,7 +137,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
             <Button
               variant="ghost"
               size="icon"
-              className="hidden md:inline-flex"
+              className="hidden rounded-xl text-slate-600 hover:bg-violet-50 hover:text-violet-800 md:inline-flex"
               onClick={openProfileDialog}
               title="Alterar nome do perfil"
               aria-label="Alterar nome do perfil"
@@ -155,7 +158,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="rounded-xl text-slate-700 hover:bg-violet-50 hover:text-violet-800 md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
             aria-expanded={isMenuOpen}
@@ -167,7 +170,7 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
       </div>
 
       {isMenuOpen && (
-        <nav id="mobile-navigation" className="md:hidden border-t bg-background px-4 py-3 shadow-lg">
+        <nav id="mobile-navigation" className="border-t border-slate-200 bg-white px-4 py-3 shadow-lg md:hidden">
           {profile && (
             <div className="mb-3 flex items-center gap-2 border-b pb-3 text-sm text-muted-foreground">
               <User className="h-4 w-4" />
@@ -229,13 +232,13 @@ export function Header({ osNumber, assetNumber, showOsAsset = false }: HeaderPro
 
       {/* Mobile OS/Ativo bar */}
       {showOsAsset && assetNumber && (
-        <div className="md:hidden border-t bg-muted/50 px-4 py-2">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="rounded-md bg-background px-2 py-1">
-              Ativo: <span className="font-medium">{assetNumber}</span>
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 md:hidden">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-full border border-violet-100 bg-white px-3 py-1.5 text-slate-600">
+              Ativo <span className="ml-1 font-semibold text-violet-900">{assetNumber}</span>
             </span>
-            <span className="rounded-md bg-background px-2 py-1">
-              OS: <span className="font-medium">{osNumber || 'Não informada'}</span>
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-600">
+              OS <span className="ml-1 font-semibold text-slate-900">{osNumber || 'Não informada'}</span>
             </span>
           </div>
         </div>
