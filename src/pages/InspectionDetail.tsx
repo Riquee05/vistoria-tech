@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, Camera, AlertCircle, Loader2, ArrowLeft, Pencil } from 'lucide-react';
+import { Check, Camera, AlertCircle, Loader2, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeInspectionIdentifiers } from '@/lib/inspection-identifiers';
 import {
@@ -53,6 +53,8 @@ export default function InspectionDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingPhotoId, setSavingPhotoId] = useState<string | null>(null);
+  const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null);
+  const [photoToDelete, setPhotoToDelete] = useState<any>(null);
   const [editingPhotos, setEditingPhotos] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [reportHtml, setReportHtml] = useState('');
@@ -515,6 +517,55 @@ export default function InspectionDetail() {
     }
   };
 
+  const handlePhotoDeletion = async () => {
+    const photo = photoToDelete;
+    if (!id || !photo || profile?.id !== inspection?.profile_id) return;
+
+    setDeletingPhotoId(photo.id);
+    try {
+      const { error: deleteError } = await supabase
+        .from('inspection_photos')
+        .delete()
+        .eq('id', photo.id)
+        .eq('inspection_id', id);
+      if (deleteError) throw deleteError;
+
+      const updatedPhotos = photos.filter(item => item.id !== photo.id);
+      setPhotos(updatedPhotos);
+      setPhotoToDelete(null);
+
+      const { error: storageError } = await supabase.storage
+        .from('inspection-photos')
+        .remove([photo.file_path]);
+
+      if (inspection.status === 'completed') {
+        try {
+          const html = await buildInspectionReportHtml(inspection, steps, updatedPhotos, additionalSoftware);
+          setReportHtml(html);
+          setReportError(null);
+        } catch (error) {
+          setReportError(error instanceof Error ? error.message : 'Não foi possível atualizar o relatório.');
+        }
+      }
+
+      toast({
+        title: 'Foto removida da vistoria',
+        description: storageError
+          ? 'A foto saiu da vistoria e do relatório, mas não foi possível limpar o arquivo armazenado.'
+          : 'A foto foi excluída da vistoria e do relatório.',
+        variant: storageError ? 'destructive' : 'default',
+      });
+    } catch (error) {
+      toast({
+        title: 'Não foi possível excluir a foto',
+        description: error instanceof Error ? error.message : 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingPhotoId(null);
+    }
+  };
+
   const compressImage = (file: File): Promise<File> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
@@ -563,6 +614,18 @@ export default function InspectionDetail() {
           <img src={photo.signed_url} alt={photo.file_name} className="h-full w-full object-cover" />
           {allowEdit && canEditPhotos && (
             <>
+              <Button
+                type="button"
+                size="icon"
+                variant="destructive"
+                className="absolute right-2 top-2 h-9 w-9 shadow"
+                aria-label={`Excluir foto ${photo.file_name}`}
+                title="Excluir foto"
+                disabled={savingPhotoId === photo.id || deletingPhotoId === photo.id}
+                onClick={() => setPhotoToDelete(photo)}
+              >
+                {deletingPhotoId === photo.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              </Button>
               <input
                 ref={element => { replacePhotoInputs.current[photo.id] = element; }}
                 type="file"
@@ -633,6 +696,23 @@ export default function InspectionDetail() {
               </CardContent>
             </Card>
           )}
+          <Dialog open={Boolean(photoToDelete)} onOpenChange={open => !open && !deletingPhotoId && setPhotoToDelete(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Excluir esta foto?</DialogTitle>
+                <DialogDescription>
+                  Ela será removida da vistoria e do PDF. Se já tiver sido enviada, uma cópia no Google Drive poderá permanecer lá.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button type="button" variant="outline" disabled={Boolean(deletingPhotoId)} onClick={() => setPhotoToDelete(null)}>Cancelar</Button>
+                <Button type="button" variant="destructive" disabled={Boolean(deletingPhotoId)} onClick={() => void handlePhotoDeletion()}>
+                  {deletingPhotoId && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Excluir foto
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           {reportLoading ? (
             <Card><CardContent className="flex items-center justify-center gap-2 py-12"><Loader2 className="h-5 w-5 animate-spin" /> Preparando relatório e fotos…</CardContent></Card>
           ) : reportError ? (
