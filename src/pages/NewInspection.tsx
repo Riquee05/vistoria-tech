@@ -112,11 +112,12 @@ export default function NewInspection() {
                   <p className="text-xs leading-5 text-slate-500">Use o número de identificação fixado no equipamento.</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="osNumber" className="text-sm font-semibold text-slate-800">Ordem de serviço <span className="font-normal text-slate-500">(opcional)</span></Label>
+                  <Label htmlFor="osNumber" className="text-sm font-semibold text-slate-800">Ordem de serviço / chamado <span className="font-normal text-slate-500">(opcional)</span></Label>
                   <Input
                     id="osNumber"
                     type="text"
-                    placeholder="Informe se houver uma OS"
+                    inputMode="text"
+                    placeholder="Ex.: 11849, OS-A123 ou CH-2026/01"
                     value={osNumber}
                     onChange={(e) => setOsNumber(e.target.value)}
                     className="h-12 rounded-xl border-slate-300 bg-white text-base placeholder:text-slate-400 focus-visible:ring-violet-600"
