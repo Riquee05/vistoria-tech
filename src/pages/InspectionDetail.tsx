@@ -766,10 +766,10 @@ export default function InspectionDetail() {
         </div>
         {/* Progress Steps */}
         <div className="mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex w-full items-center">
             {STEPS.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
+              <div key={step.id} className={`flex min-w-0 items-center ${index < STEPS.length - 1 ? 'flex-1' : 'shrink-0'}`}>
+                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium sm:h-8 sm:w-8 sm:text-sm ${
                   index < currentStep ? 'bg-primary text-primary-foreground' :
                   index === currentStep ? 'bg-primary/20 text-primary' :
                   'bg-muted text-muted-foreground'
@@ -777,7 +777,7 @@ export default function InspectionDetail() {
                   {index < currentStep ? <Check className="h-4 w-4" /> : index + 1}
                 </div>
                 {index < STEPS.length - 1 && (
-                  <div className={`w-16 h-1 mx-2 ${index < currentStep ? 'bg-primary' : 'bg-muted'}`} />
+                  <div className={`mx-1 h-1 min-w-0 flex-1 sm:mx-2 ${index < currentStep ? 'bg-primary' : 'bg-muted'}`} />
                 )}
               </div>
             ))}
@@ -877,7 +877,7 @@ export default function InspectionDetail() {
         )}
       </div>
       <Dialog open={softwareDialogOpen} onOpenChange={open => !savingSoftware && setSoftwareDialogOpen(open)}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[85dvh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Software adicional</DialogTitle>
             <DialogDescription>
@@ -888,10 +888,11 @@ export default function InspectionDetail() {
             <Label htmlFor="additionalSoftware">Software a instalar</Label>
             <Textarea
               id="additionalSoftware"
+              className="min-h-32 text-base"
               placeholder="Ex.: Microsoft Office, Adobe Reader…"
               value={softwareDraft}
               onChange={event => setSoftwareDraft(event.target.value)}
-              rows={4}
+              rows={5}
             />
           </div>
           <DialogFooter className="flex-col-reverse sm:flex-row">
