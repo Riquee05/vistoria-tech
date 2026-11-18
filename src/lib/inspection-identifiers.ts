@@ -4,9 +4,9 @@ export interface InspectionIdentifiers {
 }
 
 /**
- * Older records with numeric identifiers may have the asset and work order
- * stored in the opposite columns. Never infer a swap from letters in the OS:
- * work orders and service calls can contain both letters and numbers.
+ * Older records may have the asset and work order stored in opposite columns.
+ * Keep alphanumeric work orders intact, while recognizing clear service-order
+ * labels left in the asset column by the old reversal behavior.
  */
 export function normalizeInspectionIdentifiers(
   assetNumber: string | null | undefined,
