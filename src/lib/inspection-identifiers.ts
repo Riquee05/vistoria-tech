@@ -20,6 +20,11 @@ export function normalizeInspectionIdentifiers(
   const assetIsNumeric = /^\d+$/.test(asset);
   const osIsNumeric = /^\d+$/.test(os);
 
+  const assetLooksLikeWorkOrder = /^(?:chamado|ordem\s+de\s+servi[cç]o|o\.?s\.?|os\b|ch[-\s:#])/i.test(asset);
+  if (assetLooksLikeWorkOrder && osIsNumeric) {
+    return { assetNumber: os, osNumber: asset };
+  }
+
   if (assetIsNumeric && osIsNumeric && Number(os) <= Number(asset)) {
     return { assetNumber: os, osNumber: asset };
   }
